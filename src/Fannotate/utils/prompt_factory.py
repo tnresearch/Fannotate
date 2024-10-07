@@ -16,16 +16,20 @@ class PromptGenerator:
     This is expected to be re-initialized between models, prompts and datasets, while remaining static across tasks.
     """
 
-    def __init__(self, dataset_name: str, prompt_name: str, test_mode: str, model_name: str,
-                 tokenizer: object, device: object):
+    def __init__(self, dataset_name, prompt_name, test_mode, model_name, tokenizer, device=None):
         # Initialize attributes
         self.dataset_name = dataset_name
         self.prompt_name = prompt_name
         self.test_mode = test_mode
         self.model_name = model_name
         self.tokenizer = tokenizer
-        self.device = device
+        #self.device = device
         self.prev_prompt = ""
+        
+        if device is None:
+            self.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+        else:
+            self.device = device
 
         # Load model attributes based on model name
         self.model_attributes = load_json('configs/models.json')["models"][self.model_name]
@@ -57,6 +61,7 @@ class PromptGenerator:
     
     ###################################################################
     # These are helper functions needed to run create_and_encode_prompt
+    
     def _get_sysprompt(self, refine):
         """Get the system prompt based on whether it's a refinement or not"""
         if refine == True:

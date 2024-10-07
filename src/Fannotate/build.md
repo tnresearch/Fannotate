@@ -4,8 +4,8 @@ To run the web UI through Conda, you'll need to create a new Conda environment a
 ## 1. Create a new Conda environment
 
 ```bash
-conda create -n fannotate python=3.9
-conda activate fannotate
+conda create -n transformers python=3.9
+conda activate transformers
 ```
 
 ## 2. Install dependencies

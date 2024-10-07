@@ -1,2 +1,7 @@
 
 .DS_Store
+models/
+data/
+results/
+__pycache__/
+latest_run.log

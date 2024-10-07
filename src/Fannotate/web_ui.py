@@ -1,8 +1,9 @@
 import gradio as gr
-import argparse
-from main import run_benchmark
-from utils.data import load_json
 import os
+import argparse
+from main import main
+#from main import main as run_benchmark
+from utils.data import load_json
 
 # Load configurations
 model_config = load_json('configs/models.json')['models']
@@ -12,54 +13,69 @@ prompt_config = load_json('configs/prompts.json')
 # Extract options from configurations
 model_options = [model['model_dest'] for model in model_config.values()]
 dataset_options = list(dataset_config.keys())
-prompt_options = list(set([prompt for prompts in prompt_config.values() for prompt in prompts.keys()]))
 
-def run_benchmark_ui(models, datasets, replications, test_modes, temperatures, max_task_tokens, prompts, suffix, refine, seed):
+def get_prompts_for_dataset(dataset):
+    return list(prompt_config.get(dataset, {}).keys())
+
+def update_prompts(dataset):
+    return gr.Dropdown(choices=get_prompts_for_dataset(dataset))
+
+def run_benchmark_ui(models, dataset, prompts, replications, test_modes, temperatures, max_task_tokens, suffix, refine, seed):
     # Convert inputs to the format expected by run_benchmark
-    models = models.split(',')
-    datasets = datasets.split(',')
-    test_modes = test_modes.split(',')
+    models = models if isinstance(models, list) else [models]
+    datasets = [dataset]  # We're only allowing one dataset at a time
+    test_modes = test_modes if isinstance(test_modes, list) else [test_modes]
     temperatures = [float(t) for t in temperatures.split(',')]
     max_task_tokens = [int(t) for t in max_task_tokens.split(',')]
-    prompts = prompts.split(',') if prompts else None
+    prompts = prompts if isinstance(prompts, list) else [prompts] if prompts else None
     refine = [refine]
 
-    # Get the active conda environment
-    server = os.environ.get('CONDA_DEFAULT_ENV', 'unknown')
-
-    # Run the benchmark
-    predictions_df, agg_metrics = run_benchmark(
-        server, models, datasets, replications, test_modes,
-        temperatures, max_task_tokens, prompts, suffix, refine, seed
+    # Create an argparse.Namespace object to mimic CLI arguments
+    args = argparse.Namespace(
+        models=models,
+        datasets=datasets,
+        replications=replications,
+        test_modes=test_modes,
+        temperatures=temperatures,
+        max_task_tokens=max_task_tokens,
+        prompts=prompts,
+        suffix=suffix,
+        refine=refine,
+        seed=seed
     )
 
-    # Generate a summary of the results
-    summary = f"Benchmark completed.\n"
-    summary += f"Total runs: {len(agg_metrics)}\n"
-    summary += f"Average accuracy: {agg_metrics['accuracy'].mean():.2f}\n"
-    summary += f"Results saved in: results/{suffix}\n"
+    # Run the benchmark
+    result = main(args)
 
-    return summary
+    return f"Benchmark completed. Results saved in: results/{suffix}"
 
 # Create the Gradio interface
-iface = gr.Interface(
-    fn=run_benchmark_ui,
-    inputs=[
-        gr.Dropdown(choices=model_options, multiselect=True, label="Models"),
-        gr.Dropdown(choices=dataset_options, multiselect=True, label="Datasets"),
-        gr.Slider(minimum=1, maximum=100, step=1, default=10, label="Replications"),
-        gr.Dropdown(choices=["unconstrained", "constrained"], multiselect=True, default=["unconstrained"], label="Test Modes"),
-        gr.Textbox(default="0.75", label="Temperatures (comma-separated)"),
-        gr.Textbox(default="2500", label="Max Task Tokens (comma-separated)"),
-        gr.Dropdown(choices=prompt_options, multiselect=True, label="Prompts (optional)"),
-        gr.Textbox(default="", label="Suffix"),
-        gr.Checkbox(default=False, label="Refine Predictions"),
-        gr.Checkbox(default=True, label="Set Seed"),
-    ],
-    outputs="text",
-    title="LLM Benchmark Framework",
-    description="Select options and run the benchmark",
-)
+with gr.Blocks() as iface:
+    gr.Markdown("# LLM Benchmark Framework")
+    with gr.Row():
+        with gr.Column():
+            models = gr.Dropdown(choices=model_options, multiselect=True, label="Models")
+            dataset = gr.Dropdown(choices=dataset_options, label="Dataset")
+            prompts = gr.Dropdown(multiselect=True, label="Prompts")
+            replications = gr.Slider(minimum=1, maximum=100, step=1, value=10, label="Replications")
+            test_modes = gr.Dropdown(choices=["unconstrained", "constrained"], multiselect=True, value=["unconstrained"], label="Test Modes")
+        with gr.Column():
+            temperatures = gr.Textbox(value="0.75", label="Temperatures (comma-separated)")
+            max_task_tokens = gr.Textbox(value="2500", label="Max Task Tokens (comma-separated)")
+            suffix = gr.Textbox(value="", label="Suffix")
+            refine = gr.Checkbox(value=False, label="Refine Predictions")
+            seed = gr.Checkbox(value=True, label="Set Seed")
+    
+    run_button = gr.Button("Run Benchmark")
+    output = gr.Textbox(label="Output")
+
+    # Set up interactivity
+    dataset.change(update_prompts, inputs=[dataset], outputs=[prompts])
+    run_button.click(
+        run_benchmark_ui,
+        inputs=[models, dataset, prompts, replications, test_modes, temperatures, max_task_tokens, suffix, refine, seed],
+        outputs=[output]
+    )
 
 # Launch the interface
 if __name__ == "__main__":

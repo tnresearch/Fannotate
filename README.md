@@ -4,6 +4,7 @@
 
 # Faster Annotation - Why?
  - **VOLUME, VELOCITY:** Currently, its not realistic or resposible to use LLMs in production for data stream text classification, as this can be solved in a faster and cheaper manner with targeted text classfiers trained on the distribution of the task at hand. 
+
 - **ECONOMY OF SCALE:** Rather, using the LLM to generate training data (weak supervision) will result in cost savings both at inference time, as well as when annotating the training data.
 
 Just because a LLM _can_ solve the task with minimal development costs, does not mean it is the best business decision to use a LLM in production. See the example below.
@@ -33,6 +34,18 @@ The full process will resemble the following pattern:
 
 ![Annotation](bin/ICL_annotation.png)
 
-
-
 The documentation of the underlying HUGINN framework can be found here: [HUGINN documentation](HUGINN.md). The HUGINN codebase is provided in ``src/fannotate/`` at the time of writing (07/10/2024).
+
+
+# Component 1: Prompt development and testing
+The following is a early screenshot for a UI for running benchmark with the HUGINN codebase. This is thought to be the base framework for prompt and model selection. 
+
+<img src="bin/Fannotate1.png" alt="Fannotate1" width="70%">
+
+## TODO: Component 1
+- Add support for prompt creation and/or modification
+- Add support for data partitioning to avoid overfitting when adapting a prompt over time on the same data
+- Add support for inference from external model via API
+
+## TODO: Other
+- Add support for manual annotation/correction of existing labels

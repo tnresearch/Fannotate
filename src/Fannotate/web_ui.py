@@ -47,11 +47,11 @@ def run_benchmark_ui(models, dataset, prompts, replications, test_modes, tempera
     # Run the benchmark
     result = main(args)
 
-    return f"Benchmark completed. Results saved in: results/{suffix}"
+    return f"Benchmark completed. Results saved in: results/ folder"
 
 # Create the Gradio interface
 with gr.Blocks() as iface:
-    gr.Markdown("# LLM Benchmark Framework")
+    gr.Markdown("# Fannotate LLM Benchmark UI")
     with gr.Row():
         with gr.Column():
             models = gr.Dropdown(choices=model_options, multiselect=True, label="Models")
@@ -60,7 +60,7 @@ with gr.Blocks() as iface:
             replications = gr.Slider(minimum=1, maximum=100, step=1, value=10, label="Replications")
             test_modes = gr.Dropdown(choices=["unconstrained", "constrained"], multiselect=True, value=["unconstrained"], label="Test Modes")
         with gr.Column():
-            temperatures = gr.Textbox(value="0.75", label="Temperatures (comma-separated)")
+            temperatures = gr.Textbox(value="0.0", label="Temperatures (comma-separated)")
             max_task_tokens = gr.Textbox(value="2500", label="Max Task Tokens (comma-separated)")
             suffix = gr.Textbox(value="", label="Suffix")
             refine = gr.Checkbox(value=False, label="Refine Predictions")

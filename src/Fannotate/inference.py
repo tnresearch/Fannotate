@@ -133,9 +133,9 @@ def classify_text(server,
                 prediction = generator.constrained_generator(encoded_prompt)
             
             if test_mode == "unconstrained":
-                if refine_prediction == "False":
+                if refine_prediction == False:
                     prediction = generator.unconstrained_generator(encoded_prompt)
-                if refine_prediction == "True":
+                if refine_prediction == True:
                     """Chain-of-thought building blocks"""
                     # get the first model response
                     response_1 = generator.unconstrained_generator(encoded_prompt)

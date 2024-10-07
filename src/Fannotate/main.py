@@ -233,6 +233,7 @@ def run_benchmark(server, models, datasets, replications=10, test_modes=["uncons
         agg_metrics_df["accuracy"] = accuracies
         agg_metrics_df["avg_vram_used"] = vram
         agg_metrics_df["avg_duration_sec"] = durations
+        
 
         # append the results
         results_list.append(predictions_df)
@@ -256,6 +257,11 @@ def run_benchmark(server, models, datasets, replications=10, test_modes=["uncons
     agg_metrics['temperature'] = agg_metrics['temperature'].astype(float)
     agg_metrics['max_task_tokens'] = agg_metrics['max_task_tokens'].astype(str)
     agg_metrics['avg_vram_used'] = agg_metrics['avg_vram_used'].astype(float)
+    
+    # Convert boolean 'refine' column to string
+    agg_metrics['refine'] = agg_metrics['refine'].astype(str)
+
+    # Store agg. results:
     agg_metrics.to_hdf(current_dir+'/agg_metrics.h5', key='agg_metrics', mode='w', format="table")
 
     logging.info(f"Done with dataset: '{dataset_name}', results saved.")

@@ -1,7 +1,7 @@
 numpy==1.26.4
 pandas
 scikit-learn
-outlines
+# outlines
 openpyxl
 protobuf
 transformers
@@ -17,3 +17,4 @@ tqdm
 psutil
 requests
 torch
+tables

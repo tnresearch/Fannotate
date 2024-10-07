@@ -9,7 +9,7 @@
 Just because a LLM _can_ solve the task with minimal development costs, does not mean it is the best business decision to use a LLM in production. See the example below.
 
 ## Using LLMs in production for Telenor Norway Customer Service
-This unit receives **6500** calls daily, on average (~4.3 million tokens, when using GPT2 tokenizer). The solution should therefore be able to process those calls within 24 hours to be useful. Tested using OpenAI models on Azure private cloud in March 2024, we got the following results when comparing to open source models available at the time:
+This unit receives **6500** calls daily, on average (~4.3 million tokens, estimated using GPT2 tokenizer). The solution should therefore be able to process those calls within 24 hours to be useful. Tested using OpenAI models on Azure private cloud in March 2024, we got the following results when comparing to open source models available at the time:
 
 <img src="bin/Time.png" alt="Fig1" width="70%">
 

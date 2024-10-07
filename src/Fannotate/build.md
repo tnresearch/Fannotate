@@ -4,8 +4,8 @@ To run the web UI through Conda, you'll need to create a new Conda environment a
 ## 1. Create a new Conda environment
 
 ```bash
-conda create -n llm_benchmark python=3.8
-conda activate llm_benchmark
+conda create -n fannotate python=3.9
+conda activate fannotate
 ```
 
 ## 2. Install dependencies

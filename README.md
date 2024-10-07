@@ -4,14 +4,14 @@
 
 # Why?
  - **VOLUME, VELOCITY:** Currently, its not realistic or resposible to use LLMs in production for data stream text classification, as this can be solved in a faster and cheaper manner with targeted text classfiers trained on the distribution of the task at hand. 
-- **DISTILLATION** Rather, using the LLM to generate training data (weak supervision) will result in cost savings both at inference time, as well as when annotating the training data.
+- **ECONOMY OF SCALE:** Rather, using the LLM to generate training data (weak supervision) will result in cost savings both at inference time, as well as when annotating the training data.
 
 Just because a LLM _can_ solve the task, doesnt mean it is the best business decision to use a LLM for the particular task.
 
 # How?
-- This framework therefore help the ML team create annotations of trainig data in a responsible manner, by:
-    - Providing initial quality assessments
-    - Enabling the user to adapt the 'codebook' or description of each label over time
+- This framework helps the analytics team create annotations of trainig data in a responsible manner, by:
+    - Providing quantitative performance assessments before annotating at scale 
+    - Enabling the user to switch models, review and/or change the validation data, adapt the annotation instructions over time, altogether aiming to improve the annotation process
 
 The full process will resemble the following pattern:
 

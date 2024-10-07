@@ -34,6 +34,5 @@ The full process will resemble the following pattern:
 ![Annotation](bin/ICL_annotation.png)
 
 
-From here, the documentation of the HUGINN benchmark framework is preserved in order to make the dataption more smooth. 
 
 The documentation of the underlying HUGINN framework can be found here: [HUGINN documentation](HUGINN.md). The HUGINN codebase is provided in ``src/fannotate/`` at the time of writing (07/10/2024).

@@ -1,0 +1,152 @@
+{
+  "products": [
+    {
+      "productName": "Mobil",
+      "description": "Henvendelser vedrørende mobil, mobilabonnementer med bred dekning, ulike datapakker og tilbud på siste telefonmodeller. Kategorien inneholder også datapakker og SIM-kort.",
+      "keywords": "Mobilabonnement, SIM, eSIM, mobil-devicer (Mobiltelefon, iPad, tablets, klokke), Iphone, Samsung, Mobile ringetjenester: Ring EØS, datapakker mm. Mobil Hjemmetelefon",
+      "level2Categories": [
+        {
+          "name": "Abonnement",
+          "description": "Denne underkategorien omhandler henvendelser som omhandler selve mobilabonnementet, slik som fakturahenvendelser, bestilling og endring av mobilabonnement og andre henvendelser relatert til kundens abonnementsforhold til Telenor"
+        },
+        {
+          "name": "Utstyr/apparat",
+          "description": "Denne underkategorien omhandler bestilling og support på mobiltelefoner, nettbrett (iPad) og klokker (smartklokker). Bestilling og support på SWAP."
+        },
+        {
+          "name": "Tjeneste",
+          "description": "Denne underkategorien omhandler henvendelser som omhandler selve bruken av mobiltjenestene, dekningsforhold, supporthenvendelser vedrørende bruk av mobiltjenester"
+        },
+        {
+          "name": "SIM",
+          "description": "Denne underkategorien omhandler bestilling, aktivering, brukerveiledning og teknisk support på SIM, SIM-kort, eSIM og datasim, herunder også supporthenvendelser vedrørend pin- og PUK-kode."
+        }
+      ]
+    },
+    {
+      "productName": "Bredbånd",
+      "description": "Henvendelser vedrørende Bredbånd: Fiber og Coax. Bredbånd abonnement, hardware: ruter, router, modem, forsterker. Telenors infrastruktur/Kabelnett. Alltid på nett garanti. Henvendelser vedrørende bredbåndsproduktene, bredbåndsabonnement, fakturahenvendelser, bestilling og endring av bredbåndsabonnement, leveranse og montering/installasjon av bredbåndsløsning. Support, brukerveiledning og teknisk support og feilhenvendelser når det gjelder bredbånd. Denne kategorien inkluderer ikke mobilt bredbånd eller Trådløst Bredbånd.",
+      "keywords": "Fiber og Coax. Bredbånd abonnement, hardware: ruter, router, modem, forsterker. Telenors infrastruktur/Kabelnett.",
+      "level2Categories": [
+        {
+          "name": "Abonnement",
+          "description": "Denne underkategorien omhandler henvendelser som omhandler selve bredbåndsabonnementet, slik som fakturahenvendelser, bestilling og endring av bredbåndsabonnement og andre henvendelser relatert til kundens abonnementsforhold til Telenor"
+        },
+        {
+          "name": "Utstyr/apparat",
+          "description": "Denne underkategorien omhandler bestilling, leveranse og support på bredbåndsutstyr, slik som ruter, modem, kabler"
+        },
+        {
+          "name": "Tjeneste",
+          "description": "Denne underkategorien omhandler henvendelser som omhandler selve bruken av bredbåndstjenestene, dekningsforhold, feil- supporthenvendelser vedrørende bruk av bredbåndstjenesten, her under produkt- og funksjonsfeil, feil i nettet som driftsfeil eller fellesfeil."
+        },
+        {
+          "name": "Infrastruktur",
+          "description": "Denne underkategorien omhandler henvendelser vedrørende Telenors infrastuktur som kabler, stolper og koblingsskap. Skader på infrastruktur som meldes av kunden, eller ønsker om å flytt eller fjerne stolper eller kabler."
+        }
+      ]
+    },
+    {
+      "productName": "TV",
+      "description": "Henvendelser vedrørende TV og produktet T-We, T-We abonnement, TV fakturahenvendelser, bestilling og endring av T-We abonnement, leveranse og montering/installasjon av TV løsning. Support, brukerveiledning og teknisk support og feilhenvendelser når det gjelder TV og T-We.",
+      "keywords": "T-We, TV-abonnement, TV-hardware: T-We Box (dekoder), bruk av T-We TV tjenester som opptak og ukesarkiv. Kanaler og strømmetjenester: NRK, TV2, TV2 Play, TV Norge, Discovery, TV3, HBO, National Geographic, BBC, Viasat, Premier League, Viasport, Netflix, Max (maks)",
+      "level2Categories": [
+        {
+          "name": "Abonnement",
+          "description": "Denne underkategorien omhandler henvendelser som omhandler selve TV-abonnementet, slik som fakturahenvendelser, bestilling og endring av TV-abonnement og andre henvendelser relatert til kundens abonnementsforhold til Telenor"
+        },
+        {
+          "name": "Utstyr/apparat",
+          "description": "Denne underkategorien omhandler bestilling, leveranse og support på TV-utstyr, slik som T-We Boks I og T-We boks II, dekoder,tv-tuner og fjernkontroll og kabler til bruk på TV / T-We"
+        },
+        {
+          "name": "Tjeneste",
+          "description": "Denne underkategorien omhandler henvendelser som omhandler selve bruken av TV-tjenestene, T-We-tjenester som start forfra, ukesarkiv og filmleie. Feil- supporthenvendelser vedrørende bruk av TV/T-We-tjenesten, herunder produkt- og funksjonsfeil, feil i nettet som driftsfeil eller fellesfeil."
+        },
+        {
+          "name": "Kanaler og strømmetjenester",
+          "description": "Denne underkategorier omhandler henvendelser som dreier seg om TV-kanaler, slik som NRK, TV2, TV2 Play, TV Norge, Discovery, TV3, HBO, National Geographic, BBC, og strømmetjenester, slik som Netflix, Viaplay, Max og TV2 Play"
+        }
+      ]
+    },
+    {
+      "productName": "Bredbånd-mobilt",
+      "description": "Henvendelser vedrørende Mobilt Bredbånd, Trådløst Bredbånd og M2M og IoT abonnement, hardware: antenne, trådløs ruter, router, modem, forsterker. Henvendelser vedrørende fakturahenvendelser, bestilling og endring av abonnement på Mobilt Bredbånd og Trådløst Bredbånd, leveranse og montering/installasjon av utvendig antenne. Support, brukerveiledning og teknisk support og feilhenvendelser når det gjelder Trådløst Bredbånd. Denne kategorien inkluderer ikke Bredbånd (fiber eller coax)",
+      "keywords": "Mobilt Bredbånd og Trådløst Bredbånds abonnement, hardware: ruter, router, forsterker, og antenne beregnet for Trådløst Bredbånd.",
+      "level2Categories": [
+        {
+          "name": "Abonnement",
+          "description": "Denne underkategorien omhandler henvendelser som omhandler selve abonnementet på Mobilt Bredbånd, Trådløst Bredbånd, M2M/IoT, slik som fakturahenvendelser, bestilling og endring av Mobilt/Trådløst Bredbånd abonnement og andre henvendelser relatert til kundens abonnementsforhold til Telenor"
+        },
+        {
+          "name": "Utstyr/apparat",
+          "description": "Denne underkategorien omhandler bestilling og support på utstyr relatert til Mobilt Bredbånd, Trådløst Bredbånd slik som ruter med sim-kort, datasim og utvendig antenne for Trådløst Bredbånd."
+        },
+        {
+          "name": "Tjeneste",
+          "description": "Denne underkategorien omhandler henvendelser som omhandler selve bruken av Mobilt Bredbånd, Trådløst Bredbånd, M2M/IoT, dekningsforhold, supporthenvendelser vedrørende bruk av selve tjenesten, gjerne relatert til tekniske problemer med tjenesten for feilsituasjoner slik som driftsfeil og fellesfeil, eller problemstillinger vedrørende utstabil eller manglende 5G dekning til bruk for de mobile bredbåndstjenestene."
+        }
+      ]
+    },
+    {
+      "productName": "Forsikring",
+      "description": "Henvendelser vedrørende forsikring, slik som bestilling eller oppsigelse av forsikring, fakturahenvendelser eller supporthenvendelser vedrørende forsikring, slik som Plussforsikring eller Skjermforsikring. Kategorien omhandler også gjenerelle forsikringshenvendelser, slik som å melde skade på mobil, og henvendelser som settes videre til forsikringsselskap. Denne kategorien innbefatter ikke SAFE id tyveriforsikring, SAFE Svindelforsikring, SAFE WiFi eller noen av de andre SAFE-produktene som tilhører kategorien Tjenester.",
+      "keywords": "Plussforsikring, Skjermforsikring, forsikring vedrørende SWAP, innmelding av skade på mobil, henvendelser til forsikringsselskap, og generelle henvendelser om forsikring hvor produktnavn ikke blir oppgitt",
+      "level2Categories": [
+        {
+          "name": "Plussforsikring",
+          "description": "Henvendelser som omhandler Plussforsikring og forsikring i forbindelse med SWAP"
+        },
+        {
+          "name": "Skjermforsikring",
+          "description": "Henvendelser som omhandler Skjermforsikring"
+        },
+        {
+          "name": "Forsikring",
+          "description": "Generelle henvendelser om forsikring hvor produktnavn ikke blir oppgitt, innmelding av skade på mobil, henvendelser til forsikringsselskap"
+        }
+      ]
+    },
+    {
+      "productName": "Tjenester",
+      "description": "Henvendelser angående faktura, bestilling/endring, oppsigelse eller brukerveiledning / support vedrørende selvstendige tjenester levert av Telenor, slik som SAFE tyveri- og svindelforsikring, Se Hvem, Min Sky, Nettvern, Mitt Spor, Telenor ID. Kategorien omhandler også tredjepartstjenester slik som Babel, Strex, Google Play",
+      "keywords": "Telenor tjenester, tilleggstjenester, SAFE tyveri- og svindelforsikring, Se Hvem, Min Sky, Telenor ID, Nettvern, Mitt Spor, tredjepartstjenester slik som Babel, Strex, Google Play, Facebook, iCloud",
+      "level2Categories": [
+        {
+          "name": "SAFE",
+          "description": "Denne underkategorien omhandler henvendelser vedrørende SAFE tyveri- og svindelforsikring, SAFE WiFi, SAFE ID-vakt"
+        },
+        {
+          "name": "Min Sky",
+          "description": "Denne underkategorienomhandler henvendelser vedrørende skylagringstjenesten for bilder Min Sky. Kategorien omhandler ikke iCloud."
+        },
+        {
+          "name": "Mitt Spor",
+          "description": "Denne underkategorienomhandler henvendelser vedrørende GPS tjeneste for aktivitetsmåling for hunder, GPS-sporing."
+        },
+        {
+          "name": "Se Hvem",
+          "description": "Denne underkategorien omhandler henvendelser vedrørende tjenesten Se Hvem, Se Hvem app, som inkluderer nummeropplysning/nummervisning på mobil, sikkerhetskopi av kontaktlisten på mobilen og i Se Hvem appen kan kunden reservere seg mot telefonsalg. Se Hvem er inkludert i alle Telenors mobilabonnementer. Er ikke kunden Telenorkunde, må kunden betale for Se Hvem tjenesten."
+        },
+        {
+          "name": "Nettvern",
+          "description": "Denne underkategorien omhandler henvendelser vedrørende tjenestene Nettvern og Nettvern+ (Nettvern Pluss) som er tjenester som gir kunden ett sikkerhetsfilter som beskytter kunden mot uttrygge nettsider, både på mobilnett og bredbånd. Nettvern er et basisfilter som blokkerer de vanligste, uttrygge nettsidene og er automatisk aktivert og inkludert i alle private Telenor mobil- og bredbåndsabonnement. Nettvern+ (Nettvern Pluss) er et forsterket sikkerhetsfilter som blokkerer enda flere usikre nettsider som kan inneholde svindelforsøk, phishing eller skadelig programvare. Nettvern+ blokkerer også flere nyopprettede svindelsider. Nettvern+ er inkludert i og kan aktiveres på alle bredbåndsabonnement og utvalgte mobilabonnement. Underkategorien Nettvern omhandler bestilling, brukerveiledning og teknisk support verørende tjenesten Nettvern."
+        },
+        {
+          "name": "Telenor ID",
+          "description": "Denne underkategorienomhandler henvendelser vedrørende tjenesten Telenor ID som er en sikker og felles innlogging for alle kundens apper og tjenester fra Telenor. Når kunden er innlogget på Telenor ID, kan kunden åpne alle andre tjenester fra samme enhet uten å måtte logge inn på nytt. Telenor ID gjør en automatisk sikkerhetssjekk hver gang kunden logger inn for å avgjøre om innloggingen er trygg. Underkategorien Telenor ID vedrører brukerveiledning og teknisk support og feil vedrørende tjenesten Telenor ID."
+        },
+        {
+          "name": "Tredjepartstjenester",
+          "description": "Denne underkategorien omhandler henvendelser som vedrører tjenester som ikke er levert av Telenor - tredjepartstjenester. Dette kan gjerne være tjenester som kunden benytter i forbindelse med bruk av mobiltelefon eller bredbåndsabonnement. Kategorien omhandler for eksempel henvendelser hvor kunden er blitt faktururert for innholdstjenester slik som Strex eller Google Play. Kategorien inneholder også tredjepartstjenester som Facebook og andre nettbaserte tjenester og apper som kunden benytter seg av i forbindelse med bruk av mobil eller bredbånd fra Telenor."
+        }
+      ]
+    },
+    {
+      "productName": "Annet",
+      "description": "Annet: Henvendelser som ikke inneholder produktspesifikt innhold (produkt ikke nevnt) f.eks. brutte anrop, kunder som ringer feil, eller har generelle henvendelser hvor produkt, tjeneste eller abonnement ikke blir nevnt.",
+      "keywords": "Produkt ikke oppgitt: Ingen av Telenors produkter, tjenester eller teknologier eller abonnement er oppgitt, og kan derfor ikke identifiseres og kategorisere med de andre kategoriene.",
+      "level2Categories": []
+    }
+  ]
+}

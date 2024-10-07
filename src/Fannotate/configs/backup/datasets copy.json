@@ -1,0 +1,23 @@
+{
+    "datasets": {
+      "B2B_lvl2": {"dataset_name":"B2B_lvl2",
+                  "dataset_dest":"data/B2B_lvl2.pkl",
+                  "prompts":["instruction_1","instruction_w_keywords","full_description"]},
+
+      "B2C_lvl1": {"dataset_name":"B2C_lvl1",
+                  "dataset_dest":"data/B2C_lvl1.pkl",
+                  "prompts":["instruction_1","instruction_w_keywords","full_description"]},
+
+      "B2C_lvl1_2024": {"dataset_name":"B2C_lvl1_2024",
+                  "dataset_dest":"data/B2C_lvl1_2024.pkl",
+                  "prompts":["full_description"]},
+
+      "Lydmaskinen": {"dataset_name":"Lydmaskinen",
+                  "dataset_dest":"data/Lydmaskinen.pkl",
+                  "prompts":["Lydmaskinen_sensitive"]},
+
+      "Testdata": {"dataset_name":"Testdata",
+                  "dataset_dest":"data/Testdata.pkl",
+                  "prompts":["few_shot"]}
+    }
+  }

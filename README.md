@@ -1,4 +1,4 @@
-![Banner](bin/banner2.png)
+![Banner](bin/banner3.png)
 # Fannotate
  Faster annotation with Fannotate - this repo is the beginning of the framework and UI which will be used to annotate text training data _faster_ for weak supervision via LLMs.
 

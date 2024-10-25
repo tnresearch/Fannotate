@@ -1,0 +1,9 @@
+version: '3'
+services:
+  annotator:
+    build: .
+    ports:
+      - "1337:1337"
+    volumes:
+      - ./uploads:/app/uploads
+    image: transcript-annotator

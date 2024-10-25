@@ -5,3 +5,4 @@ data/
 results/
 __pycache__/
 latest_run.log
+uploads/

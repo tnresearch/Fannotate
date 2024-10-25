@@ -1,6 +1,7 @@
 import gradio as gr
 import pandas as pd
 from annotator import TranscriptionAnnotator
+from lm import query_llm, query_constrained_llm, batch_process_transcripts
 
 def process_df_for_display(df):
     if df is None:
@@ -68,20 +69,40 @@ def create_ui():
             with gr.Tab("🤖 LLM Auto-fill"):
                 with gr.Row():
                     llm_code_select = gr.Dropdown(
-                        label="Select Category to Auto-fill", 
-                        choices=[], 
-                        interactive=True, 
+                        label="Select Category to Auto-fill",
+                        choices=[],
+                        interactive=True,
                         allow_custom_value=True
                     )
+                    output_column = gr.Textbox(
+                        label="Output Column Name",
+                        placeholder="Enter name for the new column",
+                        interactive=True
+                    )
                     llm_reload_btn = gr.Button("Reload Categories")
-                
+
                 llm_instruction = gr.TextArea(
                     label="Instruction for LLM",
                     placeholder="Enter instructions for the LLM to follow when auto-filling annotations...",
                     interactive=True
                 )
-    
-                auto_fill_btn = gr.Button("Auto-fill Selected Category")
+                
+                with gr.Row():
+                    values = gr.TextArea(
+                        label="Valid labels",
+                        placeholder="Enter values",
+                        interactive=True
+                    )
+                    auto_fill_btn = gr.Button("Auto-fill Selected Category")
+                    
+                progress_bar = gr.Textbox(
+                    label="Progress",
+                    interactive=False
+                )
+                llm_output = gr.TextArea(
+                    label="LLM Response",
+                    interactive=False
+                )
             
             # Annotation Editor Tab
             with gr.Tab("✏️ Annotation Editor"):
@@ -157,7 +178,46 @@ def create_ui():
             inputs=[sheet_select, column_select],
             outputs=[settings_status, preview_df, transcript_box, code_select, delete_code_select]
         )
-        
+                
+        # auto_fill_btn.click(
+        #     fn=query_constrained_llm,
+        #     inputs=[llm_instruction, values],
+        #     outputs=[llm_output]
+        # )
+
+        # auto_fill_btn.click(
+        #     fn=query_llm,
+        #     inputs=[llm_instruction],
+        #     outputs=[llm_output]
+        # )
+
+        def process_with_llm(instruction, values, output_column):
+            if not output_column:
+                return "Please specify an output column name", None
+            
+            try:
+                df, status = batch_process_transcripts(
+                    annotator.df,
+                    instruction,
+                    annotator.selected_column,
+                    output_column,
+                    values
+                )
+                
+                if df is not None:
+                    annotator.df = df
+                    return status, process_df_for_display(df)
+                return status, None
+                
+            except Exception as e:
+                return f"Error: {str(e)}", None
+
+        auto_fill_btn.click(
+            fn=process_with_llm,
+            inputs=[llm_instruction, values, output_column],
+            outputs=[llm_output, review_df]
+        )
+
         llm_reload_btn.click(
             fn=lambda: [code["name"] for code in annotator.load_codebook()],
             outputs=[llm_code_select]

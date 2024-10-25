@@ -32,12 +32,12 @@ def create_ui():
         gr.Markdown("## 📝 Fannotate")
         with gr.Tabs():
             # Upload Tab
-            with gr.Tab("Upload Data"):
+            with gr.Tab("📁 Upload Data"):
                 file_upload = gr.File(label="Upload Excel File")
                 upload_status = gr.Textbox(label="Upload Status", interactive=False)
             
             # Settings Tab
-            with gr.Tab("Settings"):
+            with gr.Tab("⚙️ Settings"):
                 with gr.Row():
                     sheet_select = gr.Dropdown(label="Select Sheet", choices=[], interactive=True, allow_custom_value=True)
                     column_select = gr.Dropdown(label="Select Column", choices=[], interactive=True, allow_custom_value=True)
@@ -47,7 +47,7 @@ def create_ui():
                 preview_df = gr.DataFrame(interactive=False, visible=False)
             
             # Codebook Tab
-            with gr.Tab("Codebook"):
+            with gr.Tab("📓 Codebook"):
                 with gr.Row():
                     code_name = gr.Textbox(label="Code Name")
                     code_values = gr.Textbox(label="Code Values (comma-separated)")
@@ -65,7 +65,7 @@ def create_ui():
                 codes_display = gr.JSON(label="Current Codes")
 
             # LLM Auto-fill Tab
-            with gr.Tab("LLM Auto-fill"):
+            with gr.Tab("🤖 LLM Auto-fill"):
                 with gr.Row():
                     llm_code_select = gr.Dropdown(
                         label="Select Category to Auto-fill", 
@@ -84,7 +84,7 @@ def create_ui():
                 auto_fill_btn = gr.Button("Auto-fill Selected Category")
             
             # Annotation Editor Tab
-            with gr.Tab("Annotation Editor"):
+            with gr.Tab("✏️ Annotation Editor"):
                 with gr.Row():
                     prev_btn = gr.Button("Previous")
                     next_btn = gr.Button("Next")
@@ -103,7 +103,7 @@ def create_ui():
                 transcript_box = gr.TextArea(label="Text Content", interactive=False)
             
             # Review Tab
-            with gr.Tab("Review"):
+            with gr.Tab("🔍 Review"):
                 # Custom CSS for the table
                 gr.HTML("""
                     <style>
@@ -126,7 +126,7 @@ def create_ui():
                 refresh_review_btn = gr.Button("Refresh Overview")
             
             # Download Tab
-            with gr.Tab("Download"):
+            with gr.Tab("💾 Download"):
                 download_btn = gr.Button("Download Annotated File")
                 download_output = gr.File(label="Download")
                 download_status = gr.Textbox(label="Status", interactive=False)

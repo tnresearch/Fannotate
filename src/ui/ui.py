@@ -1,7 +1,12 @@
 import gradio as gr
 import pandas as pd
+import json
 from annotator import TranscriptionAnnotator
 from lm import query_llm, query_constrained_llm, batch_process_transcripts
+
+# annotation object
+annotator = TranscriptionAnnotator()
+
 
 def process_df_for_display(df):
     if df is None:
@@ -33,9 +38,198 @@ def process_df_for_display(df):
     except Exception as e:
         print(f"Error processing DataFrame: {e}")
         return None
+    
+
+def generate_prompt(code_name):
+    if not code_name:
+        return "Please select a category first"
+    
+    try:
+        codebook = annotator.load_codebook()
+        selected_code = None
+        
+        # Find the selected code in the codebook
+        for code in codebook:
+            if code['name'] == code_name:
+                selected_code = code
+                break
+        
+        if not selected_code:
+            return "Selected category not found in codebook"
+        
+        # Generate the prompt
+        prompt = "Please classify the following attributes of the text:\n\n"
+        prompt += json.dumps(selected_code, indent=2)
+        prompt += "\n\nText: "
+        
+        return prompt
+    
+    except Exception as e:
+        print(f"Error generating prompt: {e}")
+        return f"Error generating prompt: {str(e)}"
+
+
+
+def autofill_from_codebook(code_name, instruction):
+    print(f"Auto-filling for code: {code_name}")  # Debug print
+    print(f"Using instruction: {instruction}")  # Debug print
+    if not code_name or not instruction:
+        return "Please select a category and generate a prompt first"
+    
+    try:
+        output_column = f"llmautofill_{code_name}"
+        results = []
+        
+        for idx, row in annotator.df.iterrows():
+            # Create full prompt with text
+            full_prompt = instruction + str(row['text'])
+            
+            # Query LLM
+            response = query_llm(full_prompt)
+            results.append(response)
+            
+        # Add results to DataFrame
+        annotator.df[output_column] = results
+        
+        return f"Auto-fill completed. Results stored in column: {output_column}"
+    
+    except Exception as e:
+        print(f"Error in auto-fill process: {e}")
+        return f"Error during auto-fill: {str(e)}"
+
+def process_with_llm(instruction, values, output_column):
+    if not output_column:
+        return "Please specify an output column name"
+    try:
+        df, status = batch_process_transcripts(
+            annotator.df,
+            instruction,
+            annotator.selected_column,
+            output_column,
+            values
+        )
+        if df is not None:
+            annotator.df = df
+        return status
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+def update_value_choices(code_name):
+    if not code_name:
+        return gr.Dropdown(choices=[])
+    values = annotator.get_code_values(code_name)
+    return gr.Dropdown(choices=values, value=None, allow_custom_value=True)
+
+
+
+def refresh_codebook_display():
+    try:
+        codes = annotator.load_codebook()
+        return codes
+    except Exception as e:
+        print(f"Error refreshing codebook display: {e}")
+        return []
+
+def refresh_annotation_dropdowns():
+    try:
+        categories = [code["name"] for code in annotator.load_codebook()]
+        return (
+            gr.Dropdown(choices=categories, value=None, allow_custom_value=True),
+            gr.Dropdown(choices=[], value=None, allow_custom_value=True)
+        )
+    except Exception as e:
+        print(f"Error refreshing dropdowns: {e}")
+        return gr.Dropdown(), gr.Dropdown()
+
+def annotate_and_next(code_name, value):
+    try:
+        if not code_name or not value:
+            return "Please select both category and value", None, None, None
+        
+        # First save the annotation
+        status, df = annotator.save_annotation(code_name, value)
+        if not status.startswith("Saved"):
+            return status, None, None, None
+            
+        # Then navigate to next
+        text, idx = annotator.navigate_transcripts("next")
+        
+        # Get review status for new index
+        review_status_text = "✅" if annotator.df.iloc[idx]['is_reviewed'] else "❌"
+        
+        # Update dropdowns for next annotation
+        return (
+            status,  # annotation status
+            text,    # transcript text
+            idx,     # current index
+            review_status_text  # review status
+        )
+    except Exception as e:
+        print(f"Error in annotate_and_next: {e}")
+        return "Error during annotation", None, None, "❌"
+
+
+# New function for custom tab
+def custom_batch_process(instruction, values, output_column):
+    if not output_column:
+        return "Please specify an output column name"
+    try:
+        df, status = batch_process_transcripts(
+            annotator.df,
+            instruction,
+            annotator.selected_column,
+            output_column,
+            values
+        )
+        if df is not None:
+            annotator.df = df
+        return status
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+
+def navigate_and_update(direction):
+    try:
+        text, idx = annotator.navigate_transcripts(direction)
+        if text is None or idx is None:
+            return None, None, "❌"
+            
+        # Get review status for current index
+        review_status_text = "✅" if annotator.df.iloc[idx]['is_reviewed'] else "❌"
+        return text, idx, review_status_text
+    except Exception as e:
+        print(f"Error in navigate_and_update: {e}")
+        return None, None, "❌"
+
+
+def apply_settings(sheet, column, url, api_key, model):
+    # Update LLM settings
+    from lm import update_llm_config
+    update_llm_config(url, api_key, model)
+    
+    # Apply other settings
+    status, preview, transcript, codes1, codes2 = annotator.load_settings(sheet, column)
+    
+    # Get initial review status
+    initial_review_status = "✅" if annotator.df.iloc[0]['is_reviewed'] else "❌"
+    
+    return (
+        f"Settings applied successfully. LLM endpoint: {url}, Model: {model}\n{status}",
+        preview,
+        transcript,
+        codes1,
+        codes2,
+        initial_review_status,
+        codes1  # Add this to update llm_code_select
+    )
+
+
+
+"""
+##############
+"""
 
 def create_ui():
-    annotator = TranscriptionAnnotator()
     
     with gr.Blocks() as demo:
         gr.Markdown("## 📝 Fannotate")
@@ -134,59 +328,50 @@ def create_ui():
                         allow_custom_value=True
                     )
                     llm_reload_btn = gr.Button("Reload Categories")
-
                 
                 with gr.Row():
-
-                    llm_instruction = gr.TextArea(
-                    label="Codebook instruction for LLM",
-                    placeholder="Full prompt.",
-                    interactive=True
-                    )
+                    generate_prompt_btn = gr.Button("Generate Prompt")
                     auto_fill_btn = gr.Button("Auto-fill from Codebook")
-                    
-                progress_bar = gr.Textbox(
-                    label="Progress",
-                    interactive=False
-                )
-
+                
+                with gr.Row():
+                    llm_instruction = gr.TextArea(
+                        label="Codebook instruction for LLM",
+                        placeholder="Full prompt.",
+                        interactive=True
+                    )
+                    progress_bar = gr.Textbox(
+                        label="Progress",
+                        interactive=False
+                    )
+                
             # LLM Auto-fill Tab
             with gr.Tab("🤖 Custom"):
                 with gr.Row():
-                    # llm_code_select = gr.Dropdown(
-                    #     label="Select Category to Auto-fill",
-                    #     choices=[],
-                    #     interactive=True,
-                    #     allow_custom_value=True
-                    # )
-                    output_column = gr.Textbox(
+                    custom_output_column = gr.Textbox(
                         label="Output Column Name",
                         placeholder="Enter name for the new column",
                         interactive=True
-                    )                    
-
-                llm_instruction = gr.TextArea(
-                    label="Instruction for LLM",
-                    placeholder="Enter instructions for the LLM to follow when auto-filling annotations...",
-                    interactive=True
-                )
-                
+                    )
+                    custom_instruction = gr.TextArea(
+                        label="Instruction for LLM",
+                        placeholder="Enter instructions for the LLM to follow when auto-filling annotations...",
+                        interactive=True
+                    )
                 with gr.Row():
-                    values = gr.TextArea(
+                    custom_values = gr.TextArea(
                         label="Valid labels",
                         placeholder="Enter values",
                         interactive=True
                     )
-                    auto_fill_btn = gr.Button("Auto-fill Selected Category")
-                    
-                progress_bar = gr.Textbox(
-                    label="Progress",
-                    interactive=False
-                )
-                llm_output = gr.TextArea(
-                    label="LLM Response",
-                    interactive=False
-                )
+                    custom_process_btn = gr.Button("Process with Custom Instructions")
+                    custom_progress = gr.Textbox(
+                        label="Progress",
+                        interactive=False
+                    )
+                    custom_output = gr.TextArea(
+                        label="LLM Response",
+                        interactive=False
+                    )
             
             # Annotation Editor Tab
             with gr.Tab("✏️ Annotation review"):
@@ -214,47 +399,45 @@ def create_ui():
                 download_output = gr.File(label="Download")
                 download_status = gr.Textbox(label="Status", interactive=False)
         
+        # refresh
+        def refresh_all_code_dropdowns():
+            try:
+                codes = [code["name"] for code in annotator.load_codebook()]
+                return (
+                    gr.Dropdown(choices=codes),  # for edit_code_select
+                    gr.Dropdown(choices=codes),  # for delete_code_select
+                    gr.Dropdown(choices=codes)   # for code_select
+                )
+            except Exception as e:
+                print(f"Error refreshing code dropdowns: {e}")
+                return (
+                    gr.Dropdown(choices=[]),
+                    gr.Dropdown(choices=[]),
+                    gr.Dropdown(choices=[])
+                )
+
+
         # Event handlers
         def upload_and_get_sheets(file):
             status, sheets, _ = annotator.upload_file(file)
             return status, gr.Dropdown(choices=sheets, allow_custom_value=True)
+        
+        def update_columns(sheet):
+            columns = annotator.get_columns(sheet)
+            return gr.Dropdown(choices=columns, allow_custom_value=True)
         
         file_upload.change(
             fn=upload_and_get_sheets,
             inputs=[file_upload],
             outputs=[upload_status, sheet_select]
         )
-        
-        def update_columns(sheet):
-            columns = annotator.get_columns(sheet)
-            return gr.Dropdown(choices=columns, allow_custom_value=True)
-        
+                
         sheet_select.change(
             fn=update_columns,
             inputs=[sheet_select],
             outputs=[column_select]
         )
         
-        def apply_settings(sheet, column, url, api_key, model):
-            # Update LLM settings
-            from lm import update_llm_config
-            update_llm_config(url, api_key, model)
-            
-            # Apply other settings
-            status, preview, transcript, codes1, codes2 = annotator.load_settings(sheet, column)
-            
-            # Get initial review status
-            initial_review_status = "✅" if annotator.df.iloc[0]['is_reviewed'] else "❌"
-            
-            return (
-                f"Settings applied successfully. LLM endpoint: {url}, Model: {model}\n{status}",
-                preview,
-                transcript,
-                codes1,
-                codes2,
-                initial_review_status
-            )
-
         # Update the load_settings_btn click handler
         load_settings_btn.click(
             fn=apply_settings,
@@ -271,55 +454,22 @@ def create_ui():
                 transcript_box,
                 code_select,
                 delete_code_select,
-                review_status
+                review_status,
+                llm_code_select  # Add this output
             ]
         )
-                
-        # auto_fill_btn.click(
-        #     fn=query_constrained_llm,
-        #     inputs=[llm_instruction, values],
-        #     outputs=[llm_output]
-        # )
 
-        # auto_fill_btn.click(
-        #     fn=query_llm,
-        #     inputs=[llm_instruction],
-        #     outputs=[llm_output]
-        # )
-
-        def process_with_llm(instruction, values, output_column):
-            if not output_column:
-                return "Please specify an output column name"
-            try:
-                df, status = batch_process_transcripts(
-                    annotator.df,
-                    instruction,
-                    annotator.selected_column,
-                    output_column,
-                    values
-                )
-                if df is not None:
-                    annotator.df = df
-                return status
-            except Exception as e:
-                return f"Error: {str(e)}"
-
-        auto_fill_btn.click(
-            fn=process_with_llm,
-            inputs=[llm_instruction, values, output_column],
-            outputs=[llm_output]
+        # Event handler for custom tab
+        custom_process_btn.click(
+            fn=custom_batch_process,
+            inputs=[custom_instruction, custom_values, custom_output_column],
+            outputs=[custom_progress]
         )
 
         llm_reload_btn.click(
             fn=lambda: [code["name"] for code in annotator.load_codebook()],
             outputs=[llm_code_select]
         )
-
-        def update_value_choices(code_name):
-            if not code_name:
-                return gr.Dropdown(choices=[])
-            values = annotator.get_code_values(code_name)
-            return gr.Dropdown(choices=values, value=None, allow_custom_value=True)
         
         code_select.change(
             fn=update_value_choices,
@@ -327,21 +477,7 @@ def create_ui():
             outputs=[value_select]
         )
         
-        def refresh_all_code_dropdowns():
-            try:
-                codes = [code["name"] for code in annotator.load_codebook()]
-                return {
-                    edit_code_select: gr.Dropdown(choices=codes),
-                    delete_code_select: gr.Dropdown(choices=codes),
-                    code_select: gr.Dropdown(choices=codes)
-                }
-            except Exception as e:
-                print(f"Error refreshing code dropdowns: {e}")
-                return {
-                    edit_code_select: gr.Dropdown(choices=[]),
-                    delete_code_select: gr.Dropdown(choices=[]),
-                    code_select: gr.Dropdown(choices=[])
-                }
+        
 
         # add_code button click handler
         add_code_btn.click(
@@ -370,11 +506,11 @@ def create_ui():
             outputs=[code_status, codes_display, code_select, delete_code_select]
         )
 
-        def update_value_choices(code_name):
-            if not code_name:
-                return gr.Dropdown(choices=[])
-            values = [v['value'] for v in annotator.get_code_values(code_name)]
-            return gr.Dropdown(choices=values)
+        # def update_value_choices(code_name):
+        #     if not code_name:
+        #         return gr.Dropdown(choices=[])
+        #     values = [v['value'] for v in annotator.get_code_values(code_name)]
+        #     return gr.Dropdown(choices=values)
 
         edit_code_select.change(
             fn=update_value_choices,
@@ -389,27 +525,19 @@ def create_ui():
             outputs=[code_status, codes_display]
         )
         
-        
-        def refresh_codebook_display():
-            try:
-                codes = annotator.load_codebook()
-                return codes
-            except Exception as e:
-                print(f"Error refreshing codebook display: {e}")
-                return []
+        auto_fill_btn.click(
+            fn=autofill_from_codebook,
+            inputs=[llm_code_select, llm_instruction],
+            outputs=[progress_bar]
+        )
 
-        def refresh_annotation_dropdowns():
-            try:
-                categories = [code["name"] for code in annotator.load_codebook()]
-                return (
-                    gr.Dropdown(choices=categories, value=None, allow_custom_value=True),
-                    gr.Dropdown(choices=[], value=None, allow_custom_value=True)
-                )
-            except Exception as e:
-                print(f"Error refreshing dropdowns: {e}")
-                return gr.Dropdown(), gr.Dropdown()
+        generate_prompt_btn.click(
+            fn=generate_prompt,
+            inputs=[llm_code_select],
+            outputs=[llm_instruction]
+        )
         
-        # Connect reload buttons to their specific functions
+        
         reload_codebook_btn_1.click(
             fn=refresh_all_code_dropdowns,
             outputs=[edit_code_select, delete_code_select, code_select]
@@ -419,52 +547,14 @@ def create_ui():
             fn=refresh_annotation_dropdowns,
             outputs=[code_select, value_select]
         )
-        
-        def annotate_and_next(code_name, value):
-            try:
-                if not code_name or not value:
-                    return "Please select both category and value", None, None, None
-                
-                # First save the annotation
-                status, df = annotator.save_annotation(code_name, value)
-                if not status.startswith("Saved"):
-                    return status, None, None, None
-                    
-                # Then navigate to next
-                text, idx = annotator.navigate_transcripts("next")
-                
-                # Get review status for new index
-                review_status_text = "✅" if annotator.df.iloc[idx]['is_reviewed'] else "❌"
-                
-                # Update dropdowns for next annotation
-                return (
-                    status,  # annotation status
-                    text,    # transcript text
-                    idx,     # current index
-                    review_status_text  # review status
-                )
-            except Exception as e:
-                print(f"Error in annotate_and_next: {e}")
-                return "Error during annotation", None, None, "❌"
-        
+
+         
         annotate_next_btn.click(
             fn=annotate_and_next,
             inputs=[code_select, value_select],
             outputs=[annotation_status, transcript_box, current_index, review_status]
         )
-        
-        def navigate_and_update(direction):
-            try:
-                text, idx = annotator.navigate_transcripts(direction)
-                if text is None or idx is None:
-                    return None, None, "❌"
-                    
-                # Get review status for current index
-                review_status_text = "✅" if annotator.df.iloc[idx]['is_reviewed'] else "❌"
-                return text, idx, review_status_text
-            except Exception as e:
-                print(f"Error in navigate_and_update: {e}")
-                return None, None, "❌"
+
         
         prev_btn.click(
             fn=lambda: navigate_and_update("prev"),
@@ -481,4 +571,6 @@ def create_ui():
             outputs=[download_output, download_status]
         )
     
+    
+
     return demo

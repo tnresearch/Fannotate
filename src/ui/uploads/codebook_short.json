@@ -1,14 +1,19 @@
 {
-    "created_at": "27/10/2024 10:23:41",
+    "created_at": "27/10/2024 15:52:41",
     "dataset": "LM_short.xlsx",
     "codes": [
         {
-            "name": "Categories",
-            "description": "The values we want to classify the text as.",
+            "name": "QA",
+            "description": "The content of the text.",
             "values": [
                 {
-                    "value": "Value 1",
-                    "description": "These values have a certain meaning in the text"
+                    "value": "Question",
+                    "description": "If the text is formulated as, or consist of, a question."
+                },
+
+                {
+                    "value": "Answer",
+                    "description": "If the text is formulated as, or consist of, an answer."
                 }
             ]
         }

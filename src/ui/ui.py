@@ -56,22 +56,72 @@ def clean_column_name(name):
         name = "".join(name)
     return name.strip().replace('[','').replace(']','').replace("'", '').replace(" ", '_')
 
+
+
+
+# def autofill_from_codebook(code_name, instruction):
+#     if not code_name or not instruction:
+#         return "Please select a category and generate a prompt first"
+#     try:
+#         clean_name = clean_column_name(code_name)
+#         output_column = f"autofill_{clean_name}"
+#         results = []
+#         for idx, row in annotator.df.iterrows():
+#             full_prompt = instruction + str(row['text'])
+#             response = query_llm(full_prompt)
+#             results.append(response)
+#         annotator.df[output_column] = results
+#         return f"Auto-fill completed. Results stored in column: {output_column}"
+#     except Exception as e:
+#         print(f"Error in auto-fill process: {e}")
+#         return f"Error during auto-fill: {str(e)}"
+
+def get_category_values(code_name):
+    """Get the values for a specific category from the codebook"""
+    try:
+        codebook = annotator.load_codebook()
+        for code in codebook:
+            if code['name'] == code_name:
+                return [v['value'] for v in code['values']]
+        return []
+    except Exception as e:
+        print(f"Error getting category values: {e}")
+        return []
+
 def autofill_from_codebook(code_name, instruction):
     if not code_name or not instruction:
         return "Please select a category and generate a prompt first"
+    
     try:
+        # Get the valid values for the selected category
+        valid_values = get_category_values(code_name)
+        if not valid_values:
+            return "No valid values found for the selected category"
+            
         clean_name = clean_column_name(code_name)
         output_column = f"autofill_{clean_name}"
         results = []
-        for idx, row in annotator.df.iterrows():
-            full_prompt = instruction + str(row['text'])
-            response = query_llm(full_prompt)
-            results.append(response)
-        annotator.df[output_column] = results
-        return f"Auto-fill completed. Results stored in column: {output_column}"
+        
+        # Use batch_process_transcripts instead of individual queries
+        df, status = batch_process_transcripts(
+            annotator.df,
+            instruction,
+            'text',  # assuming this is the column with the text to process
+            output_column,
+            valid_values
+        )
+        
+        if df is not None:
+            annotator.df = df
+            return f"Auto-fill completed. Results stored in column: {output_column}"
+        else:
+            return f"Error during auto-fill: {status}"
+            
     except Exception as e:
         print(f"Error in auto-fill process: {e}")
         return f"Error during auto-fill: {str(e)}"
+
+
 
 def process_with_llm(instruction, values, output_column):
     if not output_column:

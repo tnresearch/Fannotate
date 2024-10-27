@@ -43,56 +43,59 @@ def process_df_for_display(df):
 def generate_prompt(code_name):
     if not code_name:
         return "Please select a category first"
-    
     try:
         codebook = annotator.load_codebook()
         selected_code = None
         
+        # Clean the code name for comparison
+        clean_name = clean_column_name(code_name)
+        
         # Find the selected code in the codebook
         for code in codebook:
-            if code['name'] == code_name:
+            if clean_column_name(code['name']) == clean_name:
                 selected_code = code
                 break
-        
+                
         if not selected_code:
-            return "Selected category not found in codebook"
-        
+            return f"Selected category '{code_name}' not found in codebook"
+            
         # Generate the prompt
-        prompt = "Please classify the following attributes of the text:\n\n"
+        prompt = "Please classify the text within one of the following categories:\n\n"
         prompt += json.dumps(selected_code, indent=2)
         prompt += "\n\nText: "
         
         return prompt
-    
+        
     except Exception as e:
         print(f"Error generating prompt: {e}")
         return f"Error generating prompt: {str(e)}"
 
 
+def clean_column_name(name):
+    # If name is a list, join it into a string
+    if isinstance(name, list):
+        name = "".join(name)
+    # Return the cleaned string
+    return name.strip().replace('[','').replace(']','').replace("'", '').replace(" ", '_')
 
 def autofill_from_codebook(code_name, instruction):
-    print(f"Auto-filling for code: {code_name}")  # Debug print
-    print(f"Using instruction: {instruction}")  # Debug print
     if not code_name or not instruction:
         return "Please select a category and generate a prompt first"
-    
     try:
-        output_column = f"llmautofill_{code_name}"
-        results = []
+        # Clean the category name and create the output column name
+        clean_name = clean_column_name(code_name)
+        output_column = f"autofill_{clean_name}"
         
+        # Process each row
+        results = []
         for idx, row in annotator.df.iterrows():
-            # Create full prompt with text
             full_prompt = instruction + str(row['text'])
-            
-            # Query LLM
             response = query_llm(full_prompt)
             results.append(response)
             
-        # Add results to DataFrame
+        # Add results to the DataFrame
         annotator.df[output_column] = results
-        
         return f"Auto-fill completed. Results stored in column: {output_column}"
-    
     except Exception as e:
         print(f"Error in auto-fill process: {e}")
         return f"Error during auto-fill: {str(e)}"
@@ -391,7 +394,13 @@ def create_ui():
                 annotation_status = gr.Textbox(label="Annotation Status", interactive=False)
                 
                 # Text content moved to bottom
-                transcript_box = gr.TextArea(label="Text Content", interactive=False)          
+                transcript_box = gr.TextArea(label="Text Content", interactive=False)     
+
+            
+            # Stats tab showing the performance overview
+            with gr.Tab("📊 Status"): #🔍
+                gr.Markdown("Status information will be displayed here")
+     
             
             # Download Tab
             with gr.Tab("💾 Download"):

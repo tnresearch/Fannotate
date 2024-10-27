@@ -29,7 +29,7 @@ class TranscriptionAnnotator:
             "codes": []
         }
         
-        self.backup_existing_codebook()
+        #self.backup_existing_codebook() ## Disabling backup
         with open(self.codebook_path, 'w') as f:
             json.dump(codebook, f, indent=4)
         return "New empty codebook created successfully"
@@ -61,7 +61,7 @@ class TranscriptionAnnotator:
                 if not all(required in codebook for required in ['created_at', 'codes']):
                     raise ValueError("Invalid codebook format")
             
-            self.backup_existing_codebook()
+            #self.backup_existing_codebook() ## Disabling backup
             shutil.copy2(file.name, self.codebook_path)
             return "Codebook uploaded and loaded successfully"
         except json.JSONDecodeError:
@@ -97,7 +97,7 @@ class TranscriptionAnnotator:
             # Load existing codebook
             codes = []
             if self.codebook_path.exists():
-                codes = [code["name"] for code in self.load_codebook()]
+                codes = [code["attribute"] for code in self.load_codebook()]
                 status_msg = "Settings applied successfully"
             else:
                 self.create_codebook()

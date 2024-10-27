@@ -91,7 +91,6 @@ def get_category_values(code_name):
 def autofill_from_codebook(code_name, instruction):
     if not code_name or not instruction:
         return "Please select a category and generate a prompt first"
-    
     try:
         # Get the valid values for the selected category
         valid_values = get_category_values(code_name)
@@ -100,22 +99,25 @@ def autofill_from_codebook(code_name, instruction):
             
         clean_name = clean_column_name(code_name)
         output_column = f"autofill_{clean_name}"
-        results = []
         
-        # Use batch_process_transcripts instead of individual queries
-        df, status = batch_process_transcripts(
+        # Create status message with constrained values
+        values_str = ", ".join(valid_values)
+        status_msg = f"Processing with LLM constrained to the following values: [{values_str}]"
+        
+        # Use batch_process_transcripts with the constrained values
+        df, process_status = batch_process_transcripts(
             annotator.df,
             instruction,
-            'text',  # assuming this is the column with the text to process
+            'text',
             output_column,
             valid_values
         )
         
         if df is not None:
             annotator.df = df
-            return f"Auto-fill completed. Results stored in column: {output_column}"
+            return f"{status_msg}\n\nAuto-fill completed. Results stored in column: {output_column}"
         else:
-            return f"Error during auto-fill: {status}"
+            return f"{status_msg}\n\nError during auto-fill: {process_status}"
             
     except Exception as e:
         print(f"Error in auto-fill process: {e}")

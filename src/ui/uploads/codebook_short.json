@@ -3,13 +3,40 @@
     "dataset": "LM_short.xlsx",
     "codes": [
         {
-            "attribute": "QA",
-            "description": "The content of the text.",
+            "attribute": "Language",
+            "description": "The language used in the text.",
             "categories": [
                 {
-                    "category": "Question",
-                    "description": "If the text is formulated as, or consist of, a question."
+                    "category": "French",
+                    "description": "If the text is written in French."
                 },
-
                 {
-                
+                    "category": "English",
+                    "description": "If the text is written in English."
+                },
+                {
+                    "category": "Danish",
+                    "description": "If the text written in Danish."
+                }
+            ]
+        },
+        {
+            "attribute": "Sentiment",
+            "description": "The sentiment of the text.",
+            "categories": [
+                {
+                    "category": "Positive",
+                    "description": "If the text is written in a positive or happy tone."
+                },
+                {
+                    "category": "Neutral",
+                    "description": "If the text is written in neutral tone."
+                },
+                {
+                    "category": "Negative",
+                    "description": "If the text is written in a negative or angry tone."
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,20 @@
+{
+    "created_at": "27/10/2024 10:23:41",
+    "dataset": "LM_short.xlsx",
+    "codes": [
+        {
+            "name": "Cat",
+            "description": "cat",
+            "values": [
+                {
+                    "value": "val1",
+                    "description": ""
+                },
+                {
+                    "value": "val2",
+                    "description": ""
+                }
+            ]
+        }
+    ]
+}

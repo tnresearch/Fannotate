@@ -21,26 +21,52 @@ class TranscriptionAnnotator:
             backup_path = self.upload_dir / f"backup_{timestamp}_codebook.json"
             shutil.copy2(self.codebook_path, backup_path)
 
-    def upload_file(self, file):
+    def upload_file(self, file, codebook_file=None):
         if not file:
             return "No file uploaded", [], []
         
         try:
             self.excel_file = file.name
-            # Backup existing codebook if it exists
-            self.backup_existing_codebook()
             
-            # Delete the existing codebook.json after backup
-            if self.codebook_path.exists():
-                self.codebook_path.unlink()
-            
-            # Get sheet names
+            if codebook_file:
+                # If codebook was uploaded, validate and use it
+                codebook_status = self.upload_codebook(codebook_file)
+                if "Error" in codebook_status:
+                    return codebook_status, [], []
+            elif not self.codebook_path.exists():
+                # Only create new codebook if none exists
+                self.create_codebook()
+                
             xl = pd.ExcelFile(self.excel_file)
             sheet_names = xl.sheet_names
-            
             return "File uploaded successfully", sheet_names, []
+            
         except Exception as e:
             return f"Error loading file: {str(e)}", [], []
+    
+
+    def upload_codebook(self, file):
+        if not file:
+            return "No codebook uploaded"
+        try:
+            # Validate codebook format first
+            with open(file.name, 'r') as f:
+                codebook = json.load(f)
+                if not all(required in codebook for required in ['created_at', 'codes']):
+                    raise ValueError("Invalid codebook format")
+            
+            # Only backup and copy if validation succeeds
+            self.backup_existing_codebook()
+            shutil.copy2(file.name, self.codebook_path)
+            
+            return "Codebook uploaded and loaded successfully"
+            
+        except json.JSONDecodeError:
+            return "Error: Invalid JSON format in codebook file"
+        except Exception as e:
+            return f"Error uploading codebook: {str(e)}"
+
+
 
     def get_columns(self, sheet_name):
         if not self.excel_file or not sheet_name:
@@ -57,32 +83,32 @@ class TranscriptionAnnotator:
         
         try:
             temp_df = pd.read_excel(self.excel_file, sheet_name=sheet_name)
-            
             if column_name not in temp_df.columns:
                 return f"Column '{column_name}' not found in sheet", gr.DataFrame(visible=False), "", [], []
-            
+
             # Create new DataFrame with only ID and specified column
             self.df = pd.DataFrame()
             self.df['ID'] = range(1, len(temp_df) + 1)
-            # Rename the selected column to "text"
             self.df['text'] = temp_df[column_name]
-            # Add is_reviewed column with default value False
             self.df['is_reviewed'] = False
-            
-            self.selected_column = 'text'  # Update selected column name
+            self.selected_column = 'text'
             self.current_index = 0
-            
-            # Create initial codebook
-            self.create_codebook()
-            
+
+            # Only create codebook if it doesn't exist
+            if not self.codebook_path.exists():
+                self.create_codebook()
+                status_msg = f"Settings applied and new codebook created at {self.codebook_path}"
+            else:
+                status_msg = "Settings applied successfully"
+
             # Initialize the first text to display
             initial_text = self.df.iloc[0]['text']
             
             # Get existing codes for dropdowns
             codes = [code["name"] for code in self.load_codebook()]
             
-            return f"Settings applied and codebook created at {self.codebook_path}", gr.DataFrame(value=self.df), initial_text, codes, codes
-        
+            return status_msg, gr.DataFrame(value=self.df), initial_text, codes, codes
+
         except Exception as e:
             return f"Error applying settings: {str(e)}", gr.DataFrame(visible=False), "", [], []
 

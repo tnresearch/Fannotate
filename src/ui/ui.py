@@ -216,6 +216,9 @@ def apply_settings(sheet, column, url, api_key, model):
     # Get initial review status
     initial_review_status = "✅" if annotator.df.iloc[0]['is_reviewed'] else "❌"
     
+    # Get current codebook for display
+    current_codebook = annotator.load_codebook()
+    
     return (
         f"Settings applied successfully. LLM endpoint: {url}, Model: {model}\n{status}",
         preview,
@@ -223,7 +226,8 @@ def apply_settings(sheet, column, url, api_key, model):
         codes1,
         codes2,
         initial_review_status,
-        codes1  # Add this to update llm_code_select
+        codes1,  # for llm_code_select
+        current_codebook  # Add this output for codebook display
     )
 
 
@@ -239,7 +243,9 @@ def create_ui():
         with gr.Tabs():
             # Upload Tab
             with gr.Tab("📁 Upload Data"):
-                file_upload = gr.File(label="Upload Excel File")
+                with gr.Row():
+                    file_upload = gr.File(label="Upload Excel File")
+                    codebook_upload = gr.File(label="Upload Codebook (Optional)")
                 upload_status = gr.Textbox(label="Upload Status", interactive=False)
             
             # Settings Tab 
@@ -427,18 +433,52 @@ def create_ui():
 
 
         # Event handlers
-        def upload_and_get_sheets(file):
-            status, sheets, _ = annotator.upload_file(file)
-            return status, gr.Dropdown(choices=sheets, allow_custom_value=True)
-        
+        #         
         def update_columns(sheet):
             columns = annotator.get_columns(sheet)
             return gr.Dropdown(choices=columns, allow_custom_value=True)
         
+        # def handle_codebook_upload(file, codebook_file):
+        #     codebook_status = ""
+        #     if codebook_file:
+        #         codebook_status = annotator.upload_codebook(codebook_file)
+        #         current_codebook = annotator.load_codebook()
+        #     else:
+        #         current_codebook = []
+            
+        #     status, sheets = annotator.upload_file(file, codebook_file)
+        #     return (
+        #         f"{status}\n{codebook_status}", 
+        #         gr.Dropdown(choices=sheets),
+        #         current_codebook
+        #     )
+
+        def handle_codebook_upload(file, codebook_file):
+            codebook_status = ""
+            if codebook_file:
+                codebook_status = annotator.upload_codebook(codebook_file)
+                current_codebook = annotator.load_codebook()
+            else:
+                current_codebook = []
+            
+            # The upload_file method returns 3 values, but we only need the first two
+            status, sheets, _ = annotator.upload_file(file, codebook_file)
+            return (
+                f"{status}\n{codebook_status}", 
+                gr.Dropdown(choices=sheets),
+                current_codebook
+            )
+
+        # Update the file upload event handler
+        # file_upload.change(
+        #     fn=handle_codebook_upload,
+        #     inputs=[file_upload, codebook_upload],
+        #     outputs=[upload_status, sheet_select, codes_display]
+        # )
         file_upload.change(
-            fn=upload_and_get_sheets,
-            inputs=[file_upload],
-            outputs=[upload_status, sheet_select]
+            fn=handle_codebook_upload,
+            inputs=[file_upload, codebook_upload],
+            outputs=[upload_status, sheet_select, codes_display]
         )
                 
         sheet_select.change(
@@ -447,7 +487,6 @@ def create_ui():
             outputs=[column_select]
         )
         
-        # Update the load_settings_btn click handler
         load_settings_btn.click(
             fn=apply_settings,
             inputs=[
@@ -464,7 +503,8 @@ def create_ui():
                 code_select,
                 delete_code_select,
                 review_status,
-                llm_code_select  # Add this output
+                llm_code_select,
+                codes_display  # Add this output
             ]
         )
 
@@ -514,12 +554,6 @@ def create_ui():
             inputs=[delete_code_select],
             outputs=[code_status, codes_display, code_select, delete_code_select]
         )
-
-        # def update_value_choices(code_name):
-        #     if not code_name:
-        #         return gr.Dropdown(choices=[])
-        #     values = [v['value'] for v in annotator.get_code_values(code_name)]
-        #     return gr.Dropdown(choices=values)
 
         edit_code_select.change(
             fn=update_value_choices,

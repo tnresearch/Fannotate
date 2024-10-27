@@ -21,52 +21,53 @@ class TranscriptionAnnotator:
             backup_path = self.upload_dir / f"backup_{timestamp}_codebook.json"
             shutil.copy2(self.codebook_path, backup_path)
 
+    def create_new_codebook(self):
+        """Creates a new empty codebook and saves it"""
+        codebook = {
+            "created_at": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            "dataset": Path(self.excel_file).name if self.excel_file else "",
+            "codes": []
+        }
+        
+        self.backup_existing_codebook()
+        with open(self.codebook_path, 'w') as f:
+            json.dump(codebook, f, indent=4)
+        return "New empty codebook created successfully"
+
     def upload_file(self, file, codebook_file=None):
         if not file:
             return "No file uploaded", [], []
-        
         try:
             self.excel_file = file.name
-            
             if codebook_file:
-                # If codebook was uploaded, validate and use it
                 codebook_status = self.upload_codebook(codebook_file)
                 if "Error" in codebook_status:
                     return codebook_status, [], []
             elif not self.codebook_path.exists():
-                # Only create new codebook if none exists
                 self.create_codebook()
-                
+            
             xl = pd.ExcelFile(self.excel_file)
             sheet_names = xl.sheet_names
             return "File uploaded successfully", sheet_names, []
-            
         except Exception as e:
             return f"Error loading file: {str(e)}", [], []
-    
 
     def upload_codebook(self, file):
         if not file:
             return "No codebook uploaded"
         try:
-            # Validate codebook format first
             with open(file.name, 'r') as f:
                 codebook = json.load(f)
                 if not all(required in codebook for required in ['created_at', 'codes']):
                     raise ValueError("Invalid codebook format")
             
-            # Only backup and copy if validation succeeds
             self.backup_existing_codebook()
             shutil.copy2(file.name, self.codebook_path)
-            
             return "Codebook uploaded and loaded successfully"
-            
         except json.JSONDecodeError:
             return "Error: Invalid JSON format in codebook file"
         except Exception as e:
             return f"Error uploading codebook: {str(e)}"
-
-
 
     def get_columns(self, sheet_name):
         if not self.excel_file or not sheet_name:
@@ -85,30 +86,27 @@ class TranscriptionAnnotator:
             temp_df = pd.read_excel(self.excel_file, sheet_name=sheet_name)
             if column_name not in temp_df.columns:
                 return f"Column '{column_name}' not found in sheet", gr.DataFrame(visible=False), "", [], []
-
-            # Create new DataFrame with only ID and specified column
+            
             self.df = pd.DataFrame()
             self.df['ID'] = range(1, len(temp_df) + 1)
             self.df['text'] = temp_df[column_name]
             self.df['is_reviewed'] = False
             self.selected_column = 'text'
             self.current_index = 0
-
-            # Only create codebook if it doesn't exist
-            if not self.codebook_path.exists():
+            
+            # Load existing codebook
+            codes = []
+            if self.codebook_path.exists():
+                codes = [code["name"] for code in self.load_codebook()]
+                status_msg = "Settings applied successfully"
+            else:
                 self.create_codebook()
                 status_msg = f"Settings applied and new codebook created at {self.codebook_path}"
-            else:
-                status_msg = "Settings applied successfully"
-
-            # Initialize the first text to display
+            
             initial_text = self.df.iloc[0]['text']
             
-            # Get existing codes for dropdowns
-            codes = [code["name"] for code in self.load_codebook()]
+            return status_msg, self.df, initial_text, codes, codes
             
-            return status_msg, gr.DataFrame(value=self.df), initial_text, codes, codes
-
         except Exception as e:
             return f"Error applying settings: {str(e)}", gr.DataFrame(visible=False), "", [], []
 
@@ -128,76 +126,6 @@ class TranscriptionAnnotator:
         with open(self.codebook_path, 'r') as f:
             return json.load(f)['codes']
 
-    def add_code(self, code_name, code_values, code_description):
-        if not code_name:
-            return "Please enter a code name", self.load_codebook(), gr.DataFrame(value=self.df), [], []
-        
-        try:
-            with open(self.codebook_path, 'r') as f:
-                codebook = json.load(f)
-
-            # Convert string of values to list
-            values = [v.strip() for v in code_values.split(',') if v.strip()]
-
-            # Add new code
-            new_code = {
-                "name": code_name,
-                "description": code_description,
-                "values": values
-            }
-            
-            codebook['codes'].append(new_code)
-
-            with open(self.codebook_path, 'w') as f:
-                json.dump(codebook, f, indent=4)
-
-            # Add column to DataFrame
-            if self.df is not None:
-                self.df[code_name] = ""
-
-            # Get updated list of code names
-            codes = [code["name"] for code in codebook['codes']]
-
-            return f"Added code: {code_name}", self.load_codebook(), gr.DataFrame(value=self.df), codes, codes
-        except Exception as e:
-            return f"Error adding code: {str(e)}", self.load_codebook(), gr.DataFrame(value=self.df), [], []
-
-    def delete_code(self, code_name):
-        if not self.codebook_path.exists():
-            return "Codebook does not exist.", self.load_codebook(), [], []
-
-        try:
-            with open(self.codebook_path, 'r') as f:
-                codebook = json.load(f)
-
-            # Remove code from codebook
-            codebook['codes'] = [code for code in codebook['codes'] if code['name'] != code_name]
-
-            with open(self.codebook_path, 'w') as f:
-                json.dump(codebook, f, indent=4)
-
-            # Remove column from DataFrame
-            if self.df is not None and code_name in self.df.columns:
-                self.df.drop(columns=[code_name], inplace=True)
-
-            # Get updated list of code names
-            codes = [code["name"] for code in codebook['codes']]
-
-            return f"Deleted code: {code_name}", self.load_codebook(), gr.DataFrame(value=self.df), codes, codes
-        except Exception as e:
-            return f"Error deleting code: {str(e)}", self.load_codebook(), gr.DataFrame(value=self.df), [], []
-
-    def refresh_codes(self):
-        if not self.codebook_path.exists():
-            return [], []
-        try:
-            with open(self.codebook_path, 'r') as f:
-                codebook = json.load(f)
-            categories = [code['name'] for code in codebook['codes']]
-            return categories, []
-        except Exception as e:
-            return [], []
-
     def get_code_values(self, code_name):
         if not self.codebook_path.exists() or not code_name:
             return []
@@ -206,7 +134,6 @@ class TranscriptionAnnotator:
                 codebook = json.load(f)
                 for code in codebook['codes']:
                     if code['name'] == code_name:
-                        # Return only the value part, not the full dictionary
                         return [v['value'] for v in code['values']]
             return []
         except Exception as e:
@@ -216,23 +143,17 @@ class TranscriptionAnnotator:
     def save_annotation(self, code_name, value):
         if self.df is None:
             return "Please load data first", None
-        
         if not code_name or not value:
             return "Please select both category and value", None
-            
         try:
-            # Verify the code exists in the codebook
             with open(self.codebook_path, 'r') as f:
                 codebook = json.load(f)
                 code_exists = any(code['name'] == code_name for code in codebook['codes'])
-                if not code_exists:
-                    return f"Code {code_name} not found in codebook", None
+            if not code_exists:
+                return f"Code {code_name} not found in codebook", None
             
-            # Save the annotation
             self.df.at[self.current_index, code_name] = value
-            # Set is_reviewed to True when annotation is saved
             self.df.at[self.current_index, 'is_reviewed'] = True
-            
             return f"Saved {value} for {code_name} at index {self.current_index}", self.df
         except Exception as e:
             return f"Error saving annotation: {str(e)}", None
@@ -240,13 +161,11 @@ class TranscriptionAnnotator:
     def navigate_transcripts(self, direction):
         if self.df is None or self.selected_column is None:
             return None, None
-        
         try:
             if direction == "next":
                 self.current_index = min(self.current_index + 1, len(self.df) - 1)
             else:
                 self.current_index = max(self.current_index - 1, 0)
-                
             return self.df.iloc[self.current_index]['text'], self.current_index
         except Exception as e:
             print(f"Error navigating transcripts: {e}")
@@ -261,79 +180,3 @@ class TranscriptionAnnotator:
             return str(output_path), "File saved successfully"
         except Exception as e:
             return None, f"Error saving file: {str(e)}"
-        
-    def add_code(self, code_name, code_description):
-        if not code_name:
-            return "Please enter a code name", self.load_codebook(), [], []
-        
-        try:
-            with open(self.codebook_path, 'r') as f:
-                codebook = json.load(f)
-            
-            new_code = {
-                "name": code_name,
-                "description": code_description,
-                "values": []
-            }
-            
-            codebook['codes'].append(new_code)
-            
-            with open(self.codebook_path, 'w') as f:
-                json.dump(codebook, f, indent=4)
-            
-            if self.df is not None:
-                self.df[code_name] = ""
-            
-            # Get updated list of code names for dropdowns
-            codes = [code["name"] for code in codebook['codes']]
-            
-            return (
-                f"Added code: {code_name}",  # status message
-                self.load_codebook(),        # codebook JSON
-                codes,                       # code_select dropdown choices
-                codes                        # delete_code_select dropdown choices
-            )
-        except Exception as e:
-            return f"Error adding code: {str(e)}", self.load_codebook(), [], []
-
-    def add_value_to_code(self, code_name, value_name, value_description):
-        if not code_name or not value_name:
-            return "Please select a code and enter a value", self.load_codebook()
-        
-        try:
-            with open(self.codebook_path, 'r') as f:
-                codebook = json.load(f)
-            
-            for code in codebook['codes']:
-                if code['name'] == code_name:
-                    new_value = {
-                        "value": value_name,
-                        "description": value_description
-                    }
-                    code['values'].append(new_value)
-                    break
-            
-            with open(self.codebook_path, 'w') as f:
-                json.dump(codebook, f, indent=4)
-            
-            return f"Added value {value_name} to {code_name}", self.load_codebook()
-        except Exception as e:
-            return f"Error adding value: {str(e)}", self.load_codebook()
-
-    def delete_value_from_code(self, code_name, value_name):
-        try:
-            with open(self.codebook_path, 'r') as f:
-                codebook = json.load(f)
-            
-            for code in codebook['codes']:
-                if code['name'] == code_name:
-                    code['values'] = [v for v in code['values'] 
-                                    if v['value'] != value_name]
-                    break
-            
-            with open(self.codebook_path, 'w') as f:
-                json.dump(codebook, f, indent=4)
-            
-            return f"Deleted value {value_name} from {code_name}", self.load_codebook()
-        except Exception as e:
-            return f"Error deleting value: {str(e)}", self.load_codebook()

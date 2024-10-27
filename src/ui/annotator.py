@@ -133,8 +133,8 @@ class TranscriptionAnnotator:
             with open(self.codebook_path, 'r') as f:
                 codebook = json.load(f)
                 for code in codebook['codes']:
-                    if code['name'] == code_name:
-                        return [v['value'] for v in code['values']]
+                    if code['attribute'] == code_name:
+                        return [v['category'] for v in code['categories']]
             return []
         except Exception as e:
             print(f"Error getting code values: {e}")
@@ -148,7 +148,7 @@ class TranscriptionAnnotator:
         try:
             with open(self.codebook_path, 'r') as f:
                 codebook = json.load(f)
-                code_exists = any(code['name'] == code_name for code in codebook['codes'])
+                code_exists = any(code['attribute'] == code_name for code in codebook['codes'])
             if not code_exists:
                 return f"Code {code_name} not found in codebook", None
             

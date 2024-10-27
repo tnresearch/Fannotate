@@ -14,7 +14,7 @@ def process_df_for_display(df):
         if isinstance(df, pd.DataFrame):
             df_display = df.copy()
         else:
-            df_display = pd.DataFrame(df.value if hasattr(df, 'value') else df)
+            df_display = pd.DataFrame(df.value if hasattr(df, 'category') else df)
         
         if 'text' in df_display.columns:
             df_display['text'] = df_display['text'].astype(str).apply(
@@ -38,7 +38,7 @@ def generate_prompt(code_name):
         selected_code = None
         clean_name = clean_column_name(code_name)
         for code in codebook:
-            if clean_column_name(code['name']) == clean_name:
+            if clean_column_name(code['attribute']) == clean_name:
                 selected_code = code
                 break
         if not selected_code:
@@ -81,8 +81,8 @@ def get_category_values(code_name):
     try:
         codebook = annotator.load_codebook()
         for code in codebook:
-            if code['name'] == code_name:
-                return [v['value'] for v in code['values']]
+            if code['attribute'] == code_name:
+                return [v['category'] for v in code['categories']]
         return []
     except Exception as e:
         print(f"Error getting category values: {e}")
@@ -155,7 +155,7 @@ def refresh_codebook_display():
 
 def refresh_annotation_dropdowns():
     try:
-        categories = [code["name"] for code in annotator.load_codebook()]
+        categories = [code["attribute"] for code in annotator.load_codebook()]
         return (
             gr.Dropdown(choices=categories, value=None, allow_custom_value=True),
             gr.Dropdown(choices=[], value=None, allow_custom_value=True)
@@ -216,7 +216,7 @@ def apply_settings(sheet, column, url, api_key, model):
     
     # Get the current codebook and extract codes
     current_codebook = annotator.load_codebook()
-    codes = [code["name"] for code in current_codebook]
+    codes = [code["attribute"] for code in current_codebook]
     
     # Get initial review status
     initial_review_status = "✅" if annotator.df.iloc[0]['is_reviewed'] else "❌"
@@ -237,7 +237,7 @@ def handle_new_codebook():
     try:
         status = annotator.create_new_codebook()
         current_codebook = annotator.load_codebook()
-        codes = [code["name"] for code in current_codebook]
+        codes = [code["attribute"] for code in current_codebook]
         return (
             status,
             current_codebook,
@@ -262,7 +262,7 @@ def handle_codebook_upload(file, codebook_file):
     if codebook_file:
         codebook_status = annotator.upload_codebook(codebook_file)
         current_codebook = annotator.load_codebook()
-        codes = [code["name"] for code in current_codebook]
+        codes = [code["attribute"] for code in current_codebook]
     
     status, sheets, _ = annotator.upload_file(file, codebook_file)
     
@@ -278,7 +278,7 @@ def handle_codebook_upload(file, codebook_file):
 def reload_llm_categories():
     """Helper function to reload categories for LLM tab"""
     try:
-        codes = [code["name"] for code in annotator.load_codebook()]
+        codes = [code["attribute"] for code in annotator.load_codebook()]
         return gr.Dropdown(choices=codes, value=None, allow_custom_value=True)
     except Exception as e:
         print(f"Error reloading LLM categories: {e}")

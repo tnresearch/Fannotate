@@ -3,19 +3,13 @@
     "dataset": "LM_short.xlsx",
     "codes": [
         {
-            "name": "QA",
+            "attribute": "QA",
             "description": "The content of the text.",
-            "values": [
+            "categories": [
                 {
-                    "value": "Question",
+                    "category": "Question",
                     "description": "If the text is formulated as, or consist of, a question."
                 },
 
                 {
-                    "value": "Answer",
-                    "description": "If the text is formulated as, or consist of, an answer."
-                }
-            ]
-        }
-    ]
-}
+                

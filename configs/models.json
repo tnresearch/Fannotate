@@ -49,6 +49,26 @@
       "gated":false,
       "notes":":::::::::::: GGUF ::::::::::::"
     },  
+    "meta-llama/Llama-2-7b-chat-hf": {
+      "model_dest": "meta-llama/Llama-2-7b-chat-hf",
+      "server":"transformers",
+      "model_type": "instruct",
+      "chat_format": "chatml",
+      "instruction_role": "system",
+      "quantized":false,
+      "gated":true,
+      "notes":"--------- META ----------"
+    },
+    "meta-llama/Llama-2-13b-chat-hf": {
+      "model_dest": "meta-llama/Llama-2-13b-chat-hf",
+      "server":"transformers",
+      "model_type": "instruct",
+      "chat_format": "chatml",
+      "instruction_role": "system",
+      "quantized":false,
+      "gated":true,
+      "notes":"--------- META ----------"
+    },
     "meta-llama/Meta-Llama-3-8B-Instruct": {
       "model_dest": "meta-llama/Meta-Llama-3-8B-Instruct",
       "server":"transformers",
@@ -72,7 +92,7 @@
     "meta-llama/Meta-Llama-3.1-8B-Instruct": {
       "model_dest": "meta-llama/Meta-Llama-3.1-8B-Instruct",
       "server":"transformers",
-      "model_type": "instruct",
+      "model_type": "base",
       "chat_format": "chatml",
       "instruction_role": "system",
       "quantized":false,
@@ -95,6 +115,16 @@
       "model_type": "base",
       "chat_format": "unknown",
       "instruction_role": "system",
+      "quantized":false,
+      "gated":true,
+      "notes":"--------- MISTRAL AI ----------"
+    },
+    "mistralai/Mistral-7B-Instruct-v0.1": {
+      "model_dest": "mistralai/Mistral-7B-Instruct-v0.1",
+      "server":"transformers",
+      "model_type": "instruct",
+      "instruction_role": "user",
+      "chat_format": "chatml",
       "quantized":false,
       "gated":true,
       "notes":"--------- MISTRAL AI ----------"
@@ -132,7 +162,7 @@
     "google/gemma-2-2b-it": {
       "model_dest": "google/gemma-2-2b-it",
       "server":"transformers",
-      "model_type": "instruct",
+      "model_type": "instruction",
       "chat_format": "chatml",
       "instruction_role": "user",
       "quantized":false,
@@ -142,7 +172,7 @@
     "google/gemma-2-9b-it": {
       "model_dest": "google/gemma-2-9b-it",
       "server":"transformers",
-      "model_type": "instruct",
+      "model_type": "instruction",
       "chat_format": "chatml",
       "instruction_role": "user",
       "quantized":false,
@@ -152,7 +182,7 @@
     "google/gemma-2-27b-it": {
       "model_dest": "google/gemma-2-27b-it",
       "server":"transformers",
-      "model_type": "instruct",
+      "model_type": "instruction",
       "chat_format": "chatml",
       "instruction_role": "user",
       "quantized":false,

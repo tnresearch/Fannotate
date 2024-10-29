@@ -64,7 +64,8 @@ def batch_process_transcripts(df, instruction, column_name, output_column, value
         
         # Convert comma-separated string to list and strip whitespace
         if values:
-            values = [v.strip() for v in values.split(',')]
+            if values and isinstance(values, str):
+                values = [v.strip() for v in values.split(',')]
         
         results = []
         for idx, row in df.iterrows():

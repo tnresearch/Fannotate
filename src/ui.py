@@ -322,10 +322,17 @@ def create_ui():
 
             # Simplified Codebook Tab
             with gr.Tab("📓 Codebook"):
-                codes_display = gr.JSON(label="Current Codebook")
+                with gr.Row():
+                    gr.Markdown("Codebook-editor will be here.")
+                with gr.Row():
+                    codes_display = gr.JSON(label="Current Codebook")
 
             # LLM Auto-fill Tab
             with gr.Tab("🤖 Auto-fill"):
+                with gr.Row():
+                    gr.Markdown("## Auto annotation")
+                with gr.Row():
+                    gr.Markdown("<span style='color: darkgrey'>Automated annotation of the text using the codebook.</span>")
                 with gr.Row():
                     llm_code_select = gr.Dropdown(label="Select Category to Auto-fill", choices=[], interactive=True, allow_custom_value=True)
                     llm_reload_btn = gr.Button("Reload Categories")
@@ -339,27 +346,38 @@ def create_ui():
             # Custom Tab
             with gr.Tab("🤖 Custom"):
                 with gr.Row():
+                    gr.Markdown("## Custom annotation")
+                with gr.Row():
+                    gr.Markdown("<span style='color: darkgrey'>Write a custom prompt to generate a new attribute to the text (summary, category, keywords, ...).</span>")
+                with gr.Row():
                     custom_output_column = gr.Textbox(label="Output Column Name", placeholder="Enter name for the new column", interactive=True)
+                with gr.Row():
                     custom_instruction = gr.TextArea(label="Instruction for LLM", placeholder="Enter instructions for the LLM to follow when auto-filling annotations...", interactive=True)
                 with gr.Row():
                     custom_values = gr.TextArea(label="Valid labels", placeholder="Enter values", interactive=True)
+                with gr.Row():
                     custom_process_btn = gr.Button("Process with Custom Instructions")
                     custom_progress = gr.Textbox(label="Progress", interactive=False)
                 custom_output = gr.TextArea(label="LLM Response", interactive=False)
 
             # Annotation Editor Tab
-            with gr.Tab("✏️ Annotation review"):
+            with gr.Tab("✏️ Review"):
+                with gr.Row():
+                    gr.Markdown("## Annotation review")
+                with gr.Row():
+                    gr.Markdown("<span style='color: darkgrey'>Manual review of the annotated data.</span>")
                 with gr.Row():
                     prev_btn = gr.Button("Previous")
                     next_btn = gr.Button("Next")
+                with gr.Row():
                     current_index = gr.Number(value=0, label="Current Index", interactive=False)
                     review_status = gr.Textbox(label="Review Status", interactive=False)
+                    annotation_status = gr.Textbox(label="Annotation Status", interactive=False)
                 with gr.Row():
                     code_select = gr.Dropdown(label="Select Category", choices=[], interactive=True, allow_custom_value=True)
                     value_select = gr.Dropdown(label="Select Value", choices=[], interactive=True, allow_custom_value=True)
                     reload_codebook_btn_2 = gr.Button("Reload Codebook")
                     annotate_next_btn = gr.Button("Annotate and continue to next")
-                    annotation_status = gr.Textbox(label="Annotation Status", interactive=False)
                 transcript_box = gr.TextArea(label="Text Content", interactive=False)
 
             # Stats Tab
@@ -368,6 +386,10 @@ def create_ui():
 
             # Download Tab
             with gr.Tab("💾 Download"):
+                with gr.Row():
+                    gr.Markdown("## Download data")
+                with gr.Row():
+                    gr.Markdown("<span style='color: darkgrey'>Download the annotated data as excel.</span>")
                 download_btn = gr.Button("Download Annotated File")
                 download_output = gr.File(label="Download")
                 download_status = gr.Textbox(label="Status", interactive=False)

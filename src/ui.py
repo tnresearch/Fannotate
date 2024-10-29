@@ -299,10 +299,15 @@ def create_ui():
             # Upload Tab
             with gr.Tab("📁 Upload Data"):
                 with gr.Row():
+                    gr.Markdown("## Upload data")
+                with gr.Row():
+                    gr.Markdown("<span style='color: darkgrey'>Upload the dataset and codebook, or initialize a new codebook.</span>")
+                with gr.Row():
                     file_upload = gr.File(label="Upload Excel File")
                     codebook_upload = gr.File(label="Upload Codebook (Optional)")
-                    new_codebook_btn = gr.Button("New Codebook")
-                upload_status = gr.Textbox(label="Upload Status", interactive=False)
+                with gr.Row():
+                    upload_status = gr.Textbox(label="Upload Status", interactive=False)
+                    #new_codebook_btn = gr.Button("New Codebook")
 
             # Settings Tab
             with gr.Tab("⚙️ Settings"):
@@ -326,6 +331,10 @@ def create_ui():
                     gr.Markdown("Codebook-editor will be here.")
                 with gr.Row():
                     codes_display = gr.JSON(label="Current Codebook")
+                with gr.Row():
+                    gr.Markdown("Initialize a new, empty codebook.")
+                with gr.Row():
+                    new_codebook_btn = gr.Button("New Codebook")
 
             # LLM Auto-fill Tab
             with gr.Tab("🤖 Auto-fill"):

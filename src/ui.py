@@ -292,7 +292,8 @@ def reload_llm_categories():
 """
 
 def create_ui():
-    with gr.Blocks() as demo:
+    with gr.Blocks(theme=gr.themes.Default()) as demo:
+    #with gr.Blocks(theme=gr.themes.Monochrome(spacing_size="sm", radius_size="none",primary_hue="blue",font=[gr.themes.GoogleFont("Inconsolata"), "Arial", "sans-serif"])) as demo:
         gr.Markdown("## 📝 Fannotate")
         
         with gr.Tabs():
@@ -321,7 +322,7 @@ def create_ui():
                     llm_api_key = gr.Textbox(label="API Key", value="token-abc123", placeholder="Enter API key")
                     llm_model = gr.Textbox(label="Model Name", value="google/gemma-2-2b-it", placeholder="Enter model name")
                 with gr.Row():
-                    load_settings_btn = gr.Button("Apply Settings")
+                    load_settings_btn = gr.Button("Apply Settings", variant="primary")
                     settings_status = gr.Textbox(label="Settings Status", interactive=False)
                 preview_df = gr.DataFrame(interactive=False, visible=False)
 
@@ -347,7 +348,7 @@ def create_ui():
                     llm_reload_btn = gr.Button("Reload Categories")
                 with gr.Row():
                     generate_prompt_btn = gr.Button("Generate Prompt")
-                    auto_fill_btn = gr.Button("Auto-fill from Codebook")
+                    auto_fill_btn = gr.Button("Auto-fill from Codebook", variant="primary")
                 with gr.Row():
                     llm_instruction = gr.TextArea(label="Codebook instruction for LLM", placeholder="Full prompt.", interactive=True)
                     progress_bar = gr.Textbox(label="Progress", interactive=False)
@@ -365,7 +366,7 @@ def create_ui():
                 with gr.Row():
                     custom_values = gr.TextArea(label="Valid labels", placeholder="Enter values", interactive=True)
                 with gr.Row():
-                    custom_process_btn = gr.Button("Process with Custom Instructions")
+                    custom_process_btn = gr.Button("Process with Custom Instructions", variant="primary")
                     custom_progress = gr.Textbox(label="Progress", interactive=False)
                 custom_output = gr.TextArea(label="LLM Response", interactive=False)
 
@@ -386,7 +387,7 @@ def create_ui():
                     code_select = gr.Dropdown(label="Select Category", choices=[], interactive=True, allow_custom_value=True)
                     value_select = gr.Dropdown(label="Select Value", choices=[], interactive=True, allow_custom_value=True)
                     reload_codebook_btn_2 = gr.Button("Reload Codebook")
-                    annotate_next_btn = gr.Button("Annotate and continue to next")
+                    annotate_next_btn = gr.Button("Annotate and continue to next", variant="primary")
                 transcript_box = gr.TextArea(label="Text Content", interactive=False)
 
             # Stats Tab
@@ -399,7 +400,7 @@ def create_ui():
                     gr.Markdown("## Download data")
                 with gr.Row():
                     gr.Markdown("<span style='color: darkgrey'>Download the annotated data as excel.</span>")
-                download_btn = gr.Button("Download Annotated File")
+                download_btn = gr.Button("Download Annotated File", variant="primary")
                 download_output = gr.File(label="Download")
                 download_status = gr.Textbox(label="Status", interactive=False)
 

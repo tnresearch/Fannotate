@@ -180,3 +180,8 @@ class TranscriptionAnnotator:
             return str(output_path), "File saved successfully"
         except Exception as e:
             return None, f"Error saving file: {str(e)}"
+        
+    def get_sortable_columns(self):
+        if self.df is not None:
+            return self.df.columns.tolist()
+        return []

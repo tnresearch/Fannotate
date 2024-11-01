@@ -2,353 +2,10 @@ import gradio as gr
 import pandas as pd
 import json
 from annotator import TranscriptionAnnotator
-from lm import query_llm, query_constrained_llm, batch_process_transcripts
+from lm import batch_process_transcripts
 
 # annotation object
 annotator = TranscriptionAnnotator()
-
-#############################
-# Util functions used in UI
-#############################
-
-
-def process_df_for_display(df):
-    """
-    Purpose: Formats a DataFrame for display in the UI by truncating long text fields for better readability. Used whenever a DataFrame needs to be shown in the interface, particularly after file uploads or data processing.
-    Inputs: df - The DataFrame to be processed for display
-    Outputs: A formatted DataFrame with truncated text fields, or None if processing fails
-    """
-    if df is None:
-        return None
-    try:
-        if isinstance(df, pd.DataFrame):
-            df_display = df.copy()
-        else:
-            df_display = pd.DataFrame(df.value if hasattr(df, 'category') else df)
-        
-        if 'text' in df_display.columns:
-            df_display['text'] = df_display['text'].astype(str).apply(
-                lambda x: x[:25] + '...' if len(x) > 25 else x)
-        
-        for column in df_display.columns:
-            if column != 'text' and df_display[column].dtype == 'object':
-                df_display[column] = df_display[column].astype(str).apply(
-                    lambda x: x[:500] + '...' if len(x) > 500 else x)
-        
-        return df_display
-    except Exception as e:
-        print(f"Error processing DataFrame: {e}")
-        return None
-
-def generate_prompt(code_name):
-    """
-    Purpose: Creates a structured prompt for the LLM based on the selected category from the codebook. Used in the Auto-fill tab when generating instructions for automated annotation.
-    Inputs: code_name - The category name selected from the codebook
-    Outputs: A formatted prompt string containing the category details, or an error message if generation fails
-    """
-    if not code_name:
-        return "Please select a category first"
-    try:
-        codebook = annotator.load_codebook()
-        selected_code = None
-        clean_name = clean_column_name(code_name)
-        for code in codebook:
-            if clean_column_name(code['attribute']) == clean_name:
-                selected_code = code
-                break
-        if not selected_code:
-            return f"Selected category '{code_name}' not found in codebook"
-        prompt = "Please classify the text within one of the following categories:\n\n"
-        prompt += json.dumps(selected_code, indent=2)
-        prompt += "\n\nText: "
-        return prompt
-    except Exception as e:
-        print(f"Error generating prompt: {e}")
-        return f"Error generating prompt: {str(e)}"
-
-def clean_column_name(name):
-    """
-    Purpose: Sanitizes column names by removing special characters and spaces. Used throughout the application when handling column names for consistency in data processing and storage.
-    Inputs: name - A string or list containing the column name to be cleaned
-    Outputs: A cleaned string suitable for use as a column name
-    """
-    if isinstance(name, list):
-        name = "".join(name)
-    return name.strip().replace('[','').replace(']','').replace("'", '').replace(" ", '_')
-
-
-def get_category_values(code_name):
-    """
-    Purpose: Retrieves all possible values for a given category from the codebook. Used in dropdown menus and validation during annotation.
-    Inputs: code_name - The name of the category whose values are needed
-    Outputs: A list of valid values for the category, or an empty list if none are found
-    """
-    try:
-        codebook = annotator.load_codebook()
-        for code in codebook:
-            if code['attribute'] == code_name:
-                return [v['category'] for v in code['categories']]
-        return []
-    except Exception as e:
-        print(f"Error getting category values: {e}")
-        return []
-
-def autofill_from_codebook(code_name, instruction):
-    """
-    Purpose: Automatically annotates text using the LLM based on codebook categories. Used in the Auto-fill tab to batch process annotations for a selected category.
-    Inputs: code_name - The category to use for annotation, instruction - The prompt for the LLM
-    Outputs: A status message indicating the success or failure of the auto-fill process
-    """
-    if not code_name or not instruction:
-        return "Please select a category and generate a prompt first"
-    try:
-        # Get the valid values for the selected category
-        valid_values = get_category_values(code_name)
-        if not valid_values:
-            return "No valid values found for the selected category"
-            
-        clean_name = clean_column_name(code_name)
-        output_column = f"autofill_{clean_name}"
-        
-        # Create status message with constrained values
-        values_str = ", ".join(valid_values)
-        status_msg = f"Processing with LLM constrained to the following values: [{values_str}]"
-        
-        # Use batch_process_transcripts with the constrained values
-        df, process_status = batch_process_transcripts(
-            annotator.df,
-            instruction,
-            'text',
-            output_column,
-            valid_values
-        )
-        
-        if df is not None:
-            annotator.df = df
-            return f"{status_msg}\n\nAuto-fill completed. Results stored in column: {output_column}"
-        else:
-            return f"{status_msg}\n\nError during auto-fill: {process_status}"
-            
-    except Exception as e:
-        print(f"Error in auto-fill process: {e}")
-        return f"Error during auto-fill: {str(e)}"
-
-
-
-def process_with_llm(instruction, values, output_column):
-    """
-    Purpose: Processes text through the LLM using custom instructions. Used in the Custom tab for flexible text processing tasks beyond standard annotation.
-    Inputs: instruction - Custom instructions for the LLM, values - Allowed values for output, output_column - Where to store results
-    Outputs: A status message indicating the success or failure of the processing
-    """
-    if not output_column:
-        return "Please specify an output column name"
-    try:
-        df, status = batch_process_transcripts(
-            annotator.df,
-            instruction,
-            annotator.selected_column,
-            output_column,
-            values)
-        if df is not None:
-            annotator.df = df
-        return status
-    except Exception as e:
-        return f"Error: {str(e)}"
-
-def update_value_choices(code_name):
-    """
-    Purpose: Updates the value dropdown menu based on the selected category. Used in the Review tab when selecting annotation values.
-    Inputs: code_name - The currently selected category
-    Outputs: A Gradio Dropdown component with updated choices
-    """
-    if not code_name:
-        return gr.Dropdown(choices=[])
-    values = annotator.get_code_values(code_name)
-    return gr.Dropdown(choices=values, value=None, allow_custom_value=True)
-
-def refresh_codebook_display():
-    """
-    Purpose: Reloads and displays the current codebook in the UI. Used in the Codebook tab to show the latest version of the codebook after any modifications.
-    Inputs: None
-    Outputs: List of codes from the codebook, or empty list if loading fails
-    """
-    try:
-        codes = annotator.load_codebook()
-        return codes
-    except Exception as e:
-        print(f"Error refreshing codebook display: {e}")
-        return []
-
-def refresh_annotation_dropdowns():
-    """
-    Purpose: Updates all dropdown menus that contain category choices from the codebook. Used whenever the codebook is modified to ensure all dropdowns reflect current categories.
-    Inputs: None
-    Outputs: Two Gradio Dropdown components - one for category selection and one for value selection
-    """
-    try:
-        categories = [code["attribute"] for code in annotator.load_codebook()]
-        return (
-            gr.Dropdown(choices=categories, value=None, allow_custom_value=True),
-            gr.Dropdown(choices=[], value=None, allow_custom_value=True)
-        )
-    except Exception as e:
-        print(f"Error refreshing dropdowns: {e}")
-        return gr.Dropdown(), gr.Dropdown()
-
-def annotate_and_next(code_name, value):
-    """
-    Purpose: Saves the current annotation and automatically moves to the next text entry. Used in the Review tab when annotating texts sequentially.
-    Inputs: code_name - The category being annotated, value - The selected value for the annotation
-    Outputs: Status message, next text content, current index, and review status indicator (✅/❌)
-    """
-    try:
-        if not code_name or not value:
-            return "Please select both category and value", None, None, None
-        status, df = annotator.save_annotation(code_name, value)
-        if not status.startswith("Saved"):
-            return status, None, None, None
-        text, idx = annotator.navigate_transcripts("next")
-        review_status_text = "✅" if annotator.df.iloc[idx]['is_reviewed'] else "❌"
-        return status, text, idx, review_status_text
-    except Exception as e:
-        print(f"Error in annotate_and_next: {e}")
-        return "Error during annotation", None, None, "❌"
-
-def custom_batch_process(instruction, values, output_column):
-    """
-    Purpose: Processes all texts using custom LLM instructions. Used in the Custom tab for flexible batch processing with user-defined instructions and output categories.
-    Inputs: instruction - Custom LLM prompt, values - Allowed output values, output_column - Name for the new column
-    Outputs: Status message indicating success or failure of the batch process
-    """
-    if not output_column:
-        return "Please specify an output column name"
-    try:
-        df, status = batch_process_transcripts(
-            annotator.df,
-            instruction,
-            annotator.selected_column,
-            output_column,
-            values)
-        if df is not None:
-            annotator.df = df
-        return status
-    except Exception as e:
-        return f"Error: {str(e)}"
-
-def navigate_and_update(direction):
-    """
-    Purpose: Handles navigation between text entries in the review interface. Used for moving between texts during manual review.
-    Inputs: direction - Either "prev" or "next" to indicate navigation direction
-    Outputs: Text content, current index, and review status indicator (✅/❌)
-    """
-    try:
-        text, idx = annotator.navigate_transcripts(direction)
-        if text is None or idx is None:
-            return None, None, "❌"
-        review_status_text = "✅" if annotator.df.iloc[idx]['is_reviewed'] else "❌"
-        return text, idx, review_status_text
-    except Exception as e:
-        print(f"Error in navigate_and_update: {e}")
-        return None, None, "❌"
-
-def apply_settings(sheet, column, url, api_key, model):
-    """
-    Purpose: Configures the application settings including LLM connection and data source. Used in the Settings tab to initialize or update the application configuration.
-    Inputs: sheet - Selected Excel sheet, column - Selected text column, url - LLM endpoint URL, api_key - LLM API key, model - LLM model name
-    Outputs: Status message, preview DataFrame, initial text, category dropdowns, review status, and current codebook
-    """
-    from lm import update_llm_config
-    
-    # Update LLM configuration
-    update_llm_config(url, api_key, model)
-    
-    # Load settings and get initial data
-    status, preview, transcript, codes1, codes2 = annotator.load_settings(sheet, column)
-    
-    # Get the current codebook and extract codes
-    current_codebook = annotator.load_codebook()
-    codes = [code["attribute"] for code in current_codebook]
-    
-    # Get initial review status
-    initial_review_status = "✅" if annotator.df.iloc[0]['is_reviewed'] else "❌"
-    
-    return (
-        f"Settings applied successfully. LLM endpoint: {url}, Model: {model}\n{status}",
-        process_df_for_display(preview),  # Make sure DataFrame is properly formatted
-        transcript,
-        gr.Dropdown(choices=codes),  # Update code_select dropdown
-        gr.Dropdown(choices=codes),  # Update value_select dropdown
-        initial_review_status,
-        gr.Dropdown(choices=codes),  # Update llm_code_select dropdown
-        current_codebook  # Update codes_display
-    )
-
-def handle_new_codebook():
-    """
-    Purpose: Creates and initializes a new empty codebook. Used in the Codebook tab when starting a new annotation project from scratch.
-    Inputs: None
-    Outputs: Status message, new codebook content, and three Gradio Dropdowns updated with empty category lists
-    """
-    try:
-        status = annotator.create_new_codebook()
-        current_codebook = annotator.load_codebook()
-        codes = [code["attribute"] for code in current_codebook]
-        return (
-            status,
-            current_codebook,
-            gr.Dropdown(choices=codes),
-            gr.Dropdown(choices=codes),
-            gr.Dropdown(choices=codes)
-        )
-    except Exception as e:
-        return (
-            f"Error creating new codebook: {str(e)}",
-            [],
-            gr.Dropdown(choices=[]),
-            gr.Dropdown(choices=[]),
-            gr.Dropdown(choices=[])
-        )
-
-def handle_codebook_upload(file, codebook_file):
-    """
-    Purpose: Processes the upload of data file and optional codebook file. Used in the Upload Data tab when initializing a new annotation project.
-    Inputs: file - Excel file containing texts to annotate, codebook_file - Optional JSON codebook file
-    Outputs: Status message, sheet selector dropdown, current codebook, and three category selection dropdowns
-    """
-    codebook_status = ""
-    current_codebook = []
-    codes = []
-    
-    if codebook_file:
-        codebook_status = annotator.upload_codebook(codebook_file)
-        current_codebook = annotator.load_codebook()
-        codes = [code["attribute"] for code in current_codebook]
-    
-    status, sheets, _ = annotator.upload_file(file, codebook_file)
-    
-    return (
-        f"{status}\n{codebook_status}",
-        gr.Dropdown(choices=sheets),
-        current_codebook,
-        gr.Dropdown(choices=codes),
-        gr.Dropdown(choices=codes),
-        gr.Dropdown(choices=codes)
-    )
-
-def reload_llm_categories():
-    """
-    Purpose: Refreshes the category dropdown in the LLM interface. Used in the Auto-fill tab to ensure category selections are current.
-    Inputs: None
-    Outputs: Gradio Dropdown component updated with current categories from the codebook
-    """
-    try:
-        codes = [code["attribute"] for code in annotator.load_codebook()]
-        return gr.Dropdown(choices=codes, value=None, allow_custom_value=True)
-    except Exception as e:
-        print(f"Error reloading LLM categories: {e}")
-        return gr.Dropdown(choices=[], value=None, allow_custom_value=True)
-
 
 #############################
 # UI and event triggers
@@ -466,7 +123,38 @@ def create_ui():
                 download_output = gr.File(label="Download")
                 download_status = gr.Textbox(label="Status", interactive=False)
 
+        
+        #############################
         # Event handlers
+        #############################
+
+        ### Upload tab
+        def handle_codebook_upload(file, codebook_file):
+            """
+            Purpose: Processes the upload of data file and optional codebook file. Used in the Upload Data tab when initializing a new annotation project.
+            Inputs: file - Excel file containing texts to annotate, codebook_file - Optional JSON codebook file
+            Outputs: Status message, sheet selector dropdown, current codebook, and three category selection dropdowns
+            """
+            codebook_status = ""
+            current_codebook = []
+            codes = []
+            
+            if codebook_file:
+                codebook_status = annotator.upload_codebook(codebook_file)
+                current_codebook = annotator.load_codebook()
+                codes = [code["attribute"] for code in current_codebook]
+            
+            status, sheets, _ = annotator.upload_file(file, codebook_file)
+            
+            return (
+                f"{status}\n{codebook_status}",
+                gr.Dropdown(choices=sheets),
+                current_codebook,
+                gr.Dropdown(choices=codes),
+                gr.Dropdown(choices=codes),
+                gr.Dropdown(choices=codes)
+            )
+        
         file_upload.change(fn=handle_codebook_upload, 
                            inputs=[file_upload, codebook_upload], 
                            outputs=[upload_status, sheet_select, codes_display, code_select, value_select, llm_code_select])
@@ -474,51 +162,334 @@ def create_ui():
         codebook_upload.change(fn=handle_codebook_upload, 
                                inputs=[file_upload, codebook_upload], 
                                outputs=[upload_status, sheet_select, codes_display, code_select, value_select, llm_code_select])
+        
+        def handle_new_codebook():
+            """
+            Purpose: Creates and initializes a new empty codebook. Used in the Codebook tab when starting a new annotation project from scratch.
+            Inputs: None
+            Outputs: Status message, new codebook content, and three Gradio Dropdowns updated with empty category lists
+            """
+            try:
+                status = annotator.create_new_codebook()
+                current_codebook = annotator.load_codebook()
+                codes = [code["attribute"] for code in current_codebook]
+                return (
+                    status,
+                    current_codebook,
+                    gr.Dropdown(choices=codes),
+                    gr.Dropdown(choices=codes),
+                    gr.Dropdown(choices=codes)
+                )
+            except Exception as e:
+                return (
+                    f"Error creating new codebook: {str(e)}",
+                    [],
+                    gr.Dropdown(choices=[]),
+                    gr.Dropdown(choices=[]),
+                    gr.Dropdown(choices=[])
+                )
+            
+        new_codebook_btn.click(fn=handle_new_codebook, 
+                               outputs=[upload_status, codes_display, code_select, value_select, llm_code_select])
 
+
+
+        ### Settings
+
+        def process_df_for_display(df):
+            """
+            Purpose: Formats a DataFrame for display in the UI by truncating long text fields for better readability. Used whenever a DataFrame needs to be shown in the interface, particularly after file uploads or data processing.
+            Inputs: df - The DataFrame to be processed for display
+            Outputs: A formatted DataFrame with truncated text fields, or None if processing fails
+            """
+            if df is None:
+                return None
+            try:
+                if isinstance(df, pd.DataFrame):
+                    df_display = df.copy()
+                else:
+                    df_display = pd.DataFrame(df.value if hasattr(df, 'category') else df)
+                
+                if 'text' in df_display.columns:
+                    df_display['text'] = df_display['text'].astype(str).apply(
+                        lambda x: x[:25] + '...' if len(x) > 25 else x)
+                
+                for column in df_display.columns:
+                    if column != 'text' and df_display[column].dtype == 'object':
+                        df_display[column] = df_display[column].astype(str).apply(
+                            lambda x: x[:500] + '...' if len(x) > 500 else x)
+                
+                return df_display
+            except Exception as e:
+                print(f"Error processing DataFrame: {e}")
+                return None
+        
+        def update_value_choices(code_name):
+            """
+            Purpose: Updates the value dropdown menu based on the selected category. Used in the Review tab when selecting annotation values.
+            Inputs: code_name - The currently selected category
+            Outputs: A Gradio Dropdown component with updated choices
+            """
+            if not code_name:
+                return gr.Dropdown(choices=[])
+            values = annotator.get_code_values(code_name)
+            return gr.Dropdown(choices=values, value=None, allow_custom_value=True)
+
+        def apply_settings(sheet, column, url, api_key, model):
+            """
+            Purpose: Configures the application settings including LLM connection and data source. Used in the Settings tab to initialize or update the application configuration.
+            Inputs: sheet - Selected Excel sheet, column - Selected text column, url - LLM endpoint URL, api_key - LLM API key, model - LLM model name
+            Outputs: Status message, preview DataFrame, initial text, category dropdowns, review status, and current codebook
+            """
+            from lm import update_llm_config
+            
+            # Update LLM configuration
+            update_llm_config(url, api_key, model)
+            
+            # Load settings and get initial data
+            status, preview, transcript, codes1, codes2 = annotator.load_settings(sheet, column)
+            
+            # Get the current codebook and extract codes
+            current_codebook = annotator.load_codebook()
+            codes = [code["attribute"] for code in current_codebook]
+            
+            # Get initial review status
+            initial_review_status = "✅" if annotator.df.iloc[0]['is_reviewed'] else "❌"
+            
+            return (
+                f"Settings applied successfully. LLM endpoint: {url}, Model: {model}\n{status}",
+                process_df_for_display(preview),  # Make sure DataFrame is properly formatted
+                transcript,
+                gr.Dropdown(choices=codes),  # Update code_select dropdown
+                gr.Dropdown(choices=codes),  # Update value_select dropdown
+                initial_review_status,
+                gr.Dropdown(choices=codes),  # Update llm_code_select dropdown
+                current_codebook  # Update codes_display
+            )
+        
+        load_settings_btn.click(fn=apply_settings, 
+                                inputs=[sheet_select, column_select, llm_url, llm_api_key, llm_model], 
+                                outputs=[settings_status, preview_df, transcript_box, code_select, value_select, review_status, llm_code_select, codes_display])
+        
         sheet_select.change(fn=lambda x: gr.Dropdown(choices=annotator.get_columns(x)), 
                             inputs=[sheet_select], 
                             outputs=[column_select])
         
         code_select.change(fn=update_value_choices, 
                            inputs=[code_select], outputs=[value_select])
-        
 
-        ### Buttons
-        new_codebook_btn.click(fn=handle_new_codebook, 
-                               outputs=[upload_status, codes_display, code_select, value_select, llm_code_select])
-
-
-        load_settings_btn.click(fn=apply_settings, 
-                                inputs=[sheet_select, column_select, llm_url, llm_api_key, llm_model], 
-                                outputs=[settings_status, preview_df, transcript_box, code_select, value_select, review_status, llm_code_select, codes_display])
-
+        def reload_llm_categories():
+            """
+            Purpose: Refreshes the category dropdown in the LLM interface. Used in the Auto-fill tab to ensure category selections are current.
+            Inputs: None
+            Outputs: Gradio Dropdown component updated with current categories from the codebook
+            """
+            try:
+                codes = [code["attribute"] for code in annotator.load_codebook()]
+                return gr.Dropdown(choices=codes, value=None, allow_custom_value=True)
+            except Exception as e:
+                print(f"Error reloading LLM categories: {e}")
+                return gr.Dropdown(choices=[], value=None, allow_custom_value=True)
+            
         llm_reload_btn.click(fn=reload_llm_categories, 
                              outputs=[llm_code_select])
 
+        def get_category_values(code_name):
+            """
+            Purpose: Retrieves all possible values for a given category from the codebook. Used in dropdown menus and validation during annotation.
+            Inputs: code_name - The name of the category whose values are needed
+            Outputs: A list of valid values for the category, or an empty list if none are found
+            """
+            try:
+                codebook = annotator.load_codebook()
+                for code in codebook:
+                    if code['attribute'] == code_name:
+                        return [v['category'] for v in code['categories']]
+                return []
+            except Exception as e:
+                print(f"Error getting category values: {e}")
+                return []
+        
+        def clean_column_name(name):
+            """
+            Purpose: Sanitizes column names by removing special characters and spaces. Used throughout the application when handling column names for consistency in data processing and storage.
+            Inputs: name - A string or list containing the column name to be cleaned
+            Outputs: A cleaned string suitable for use as a column name
+            """
+            if isinstance(name, list):
+                name = "".join(name)
+            return name.strip().replace('[','').replace(']','').replace("'", '').replace(" ", '_')
+
+        
+        def autofill_from_codebook(code_name, instruction):
+            """
+            Purpose: Automatically annotates text using the LLM based on codebook categories. Used in the Auto-fill tab to batch process annotations for a selected category.
+            Inputs: code_name - The category to use for annotation, instruction - The prompt for the LLM
+            Outputs: A status message indicating the success or failure of the auto-fill process
+            """
+            if not code_name or not instruction:
+                return "Please select a category and generate a prompt first"
+            try:
+                # Get the valid values for the selected category
+                valid_values = get_category_values(code_name)
+                if not valid_values:
+                    return "No valid values found for the selected category"
+                    
+                clean_name = clean_column_name(code_name)
+                output_column = f"autofill_{clean_name}"
+                
+                # Create status message with constrained values
+                values_str = ", ".join(valid_values)
+                status_msg = f"Processing with LLM constrained to the following values: [{values_str}]"
+                
+                # Use batch_process_transcripts with the constrained values
+                df, process_status = batch_process_transcripts(
+                    annotator.df,
+                    instruction,
+                    'text',
+                    output_column,
+                    valid_values
+                )
+                
+                if df is not None:
+                    annotator.df = df
+                    return f"{status_msg}\n\nAuto-fill completed. Results stored in column: {output_column}"
+                else:
+                    return f"{status_msg}\n\nError during auto-fill: {process_status}"
+                    
+            except Exception as e:
+                print(f"Error in auto-fill process: {e}")
+                return f"Error during auto-fill: {str(e)}"
+            
         auto_fill_btn.click(fn=autofill_from_codebook, 
                             inputs=[llm_code_select, llm_instruction], 
                             outputs=[progress_bar])
 
+
+        def generate_prompt(code_name):
+            """
+            Purpose: Creates a structured prompt for the LLM based on the selected category from the codebook. Used in the Auto-fill tab when generating instructions for automated annotation.
+            Inputs: code_name - The category name selected from the codebook
+            Outputs: A formatted prompt string containing the category details, or an error message if generation fails
+            """
+            if not code_name:
+                return "Please select a category first"
+            try:
+                codebook = annotator.load_codebook()
+                selected_code = None
+                clean_name = clean_column_name(code_name)
+                for code in codebook:
+                    if clean_column_name(code['attribute']) == clean_name:
+                        selected_code = code
+                        break
+                if not selected_code:
+                    return f"Selected category '{code_name}' not found in codebook"
+                prompt = "Please classify the text within one of the following categories:\n\n"
+                prompt += json.dumps(selected_code, indent=2)
+                prompt += "\n\nText: "
+                return prompt
+            except Exception as e:
+                print(f"Error generating prompt: {e}")
+                return f"Error generating prompt: {str(e)}"
+            
         generate_prompt_btn.click(fn=generate_prompt, 
                                   inputs=[llm_code_select], 
                                   outputs=[llm_instruction])
 
+        def refresh_annotation_dropdowns():
+            """
+            Purpose: Updates all dropdown menus that contain category choices from the codebook. Used whenever the codebook is modified to ensure all dropdowns reflect current categories.
+            Inputs: None
+            Outputs: Two Gradio Dropdown components - one for category selection and one for value selection
+            """
+            try:
+                categories = [code["attribute"] for code in annotator.load_codebook()]
+                return (
+                    gr.Dropdown(choices=categories, value=None, allow_custom_value=True),
+                    gr.Dropdown(choices=[], value=None, allow_custom_value=True)
+                )
+            except Exception as e:
+                print(f"Error refreshing dropdowns: {e}")
+                return gr.Dropdown(), gr.Dropdown()
+            
         reload_codebook_btn_2.click(fn=refresh_annotation_dropdowns, 
                                     outputs=[code_select, value_select])
+        
 
+        # Custom tab
+        def custom_batch_process(instruction, values, output_column):
+            """
+            Purpose: Processes all texts using custom LLM instructions. Used in the Custom tab for flexible batch processing with user-defined instructions and output categories.
+            Inputs: instruction - Custom LLM prompt, values - Allowed output values, output_column - Name for the new column
+            Outputs: Status message indicating success or failure of the batch process
+            """
+            if not output_column:
+                return "Please specify an output column name"
+            try:
+                df, status = batch_process_transcripts(
+                    annotator.df,
+                    instruction,
+                    annotator.selected_column,
+                    output_column,
+                    values)
+                if df is not None:
+                    annotator.df = df
+                return status
+            except Exception as e:
+                return f"Error: {str(e)}"
+            
+        custom_process_btn.click(fn=custom_batch_process, 
+                                 inputs=[custom_instruction, custom_values, custom_output_column], 
+                                 outputs=[custom_progress])
+        
+        ### Annotation tab
+
+        def annotate_and_next(code_name, value):
+            """
+            Purpose: Saves the current annotation and automatically moves to the next text entry. Used in the Review tab when annotating texts sequentially.
+            Inputs: code_name - The category being annotated, value - The selected value for the annotation
+            Outputs: Status message, next text content, current index, and review status indicator (✅/❌)
+            """
+            try:
+                if not code_name or not value:
+                    return "Please select both category and value", None, None, None
+                status, df = annotator.save_annotation(code_name, value)
+                if not status.startswith("Saved"):
+                    return status, None, None, None
+                text, idx = annotator.navigate_transcripts("next")
+                review_status_text = "✅" if annotator.df.iloc[idx]['is_reviewed'] else "❌"
+                return status, text, idx, review_status_text
+            except Exception as e:
+                print(f"Error in annotate_and_next: {e}")
+                return "Error during annotation", None, None, "❌"
+            
         annotate_next_btn.click(fn=annotate_and_next, 
                                 inputs=[code_select, value_select], 
                                 outputs=[annotation_status, transcript_box, current_index, review_status])
+
+        def navigate_and_update(direction):
+            """
+            Purpose: Handles navigation between text entries in the review interface. Used for moving between texts during manual review.
+            Inputs: direction - Either "prev" or "next" to indicate navigation direction
+            Outputs: Text content, current index, and review status indicator (✅/❌)
+            """
+            try:
+                text, idx = annotator.navigate_transcripts(direction)
+                if text is None or idx is None:
+                    return None, None, "❌"
+                review_status_text = "✅" if annotator.df.iloc[idx]['is_reviewed'] else "❌"
+                return text, idx, review_status_text
+            except Exception as e:
+                print(f"Error in navigate_and_update: {e}")
+                return None, None, "❌"
 
         prev_btn.click(fn=lambda: navigate_and_update("prev"), 
                        outputs=[transcript_box, current_index, review_status])
 
         next_btn.click(fn=lambda: navigate_and_update("next"), 
                        outputs=[transcript_box, current_index, review_status])
-
-        custom_process_btn.click(fn=custom_batch_process, 
-                                 inputs=[custom_instruction, custom_values, custom_output_column], 
-                                 outputs=[custom_progress])
+        
+        ### Download tab
 
         download_btn.click(fn=annotator.save_excel, 
                            outputs=[download_output, download_status])

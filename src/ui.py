@@ -37,6 +37,7 @@ def create_ui():
                     column_select = gr.Dropdown(label="Select Column", choices=[], interactive=True)
                 with gr.Row():
                     gr.Markdown("### LLM Settings")
+                    gr.Markdown("Frigg is found at: ```http://172.16.16.48:8000/v1/```")
                 with gr.Row():
                     llm_url = gr.Textbox(label="LLM Endpoint URL", value="http://192.168.50.155:8000/v1/", placeholder="Enter LLM endpoint URL")
                     llm_api_key = gr.Textbox(label="API Key", value="token-abc123", placeholder="Enter API key")
@@ -115,12 +116,27 @@ def create_ui():
 
             # Download Tab
             with gr.Tab("💾 Download"):
+                # with gr.Row():
+                #     gr.Markdown("## Download data")
+                # with gr.Row():
+                #     gr.Markdown("<span style='color: darkgrey'>Download the annotated data as excel.</span>")
+                # download_btn = gr.Button("Download Annotated File", variant="primary")
+                # download_output = gr.File(label="Download")
+                # download_status = gr.Textbox(label="Status", interactive=False)
                 with gr.Row():
                     gr.Markdown("## Download data")
+                
                 with gr.Row():
-                    gr.Markdown("<span style='color: darkgrey'>Download the annotated data as excel.</span>")
-                download_btn = gr.Button("Download Annotated File", variant="primary")
-                download_output = gr.File(label="Download")
+                    gr.Markdown("Download the annotated data and codebook.")
+                    
+                with gr.Row():
+                    download_btn = gr.Button("Download Annotated File", variant="primary")
+                    codebook_download_btn = gr.Button("Download Codebook", variant="secondary")
+                    
+                with gr.Row():
+                    download_output = gr.File(label="Download")
+                    codebook_output = gr.File(label="Codebook Download")
+                    
                 download_status = gr.Textbox(label="Status", interactive=False)
 
         
@@ -493,4 +509,7 @@ def create_ui():
 
         download_btn.click(fn=annotator.save_excel, 
                            outputs=[download_output, download_status])
+        
+        codebook_download_btn.click(fn=annotator.save_codebook,
+                        outputs=[codebook_output, download_status])
         return demo

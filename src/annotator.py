@@ -172,6 +172,7 @@ class TranscriptionAnnotator:
             return None, None
 
     def save_excel(self):
+        """Saves the current data to an excel file for download"""
         if self.df is None:
             return None, "No data to save"
         try:
@@ -180,6 +181,28 @@ class TranscriptionAnnotator:
             return str(output_path), "File saved successfully"
         except Exception as e:
             return None, f"Error saving file: {str(e)}"
+        
+    def save_codebook(self):
+        """Saves the current codebook to a file for download"""
+        if not self.codebook_path.exists():
+            return None, "No codebook to save"
+        
+        try:
+            # Get current date and time
+            import datetime
+            now = datetime.datetime.now()
+
+            # Format datetime as string
+            timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
+
+            # Append timestamp to filename
+            output_path = self.upload_dir / f"codebook_{timestamp}.json"
+
+            # Copy the current codebook to the output path
+            shutil.copy2(self.codebook_path, output_path)
+            return str(output_path), "Codebook saved successfully"
+        except Exception as e:
+            return None, f"Error saving codebook: {str(e)}"
         
     def get_sortable_columns(self):
         if self.df is not None:

@@ -96,7 +96,7 @@ class TranscriptionAnnotator:
             self.current_index = 0
             
             #initial_text = self.df.iloc[0]['text']
-            status_msg = "Loaded df. This will be backed up as: "+str(self.backup_path)
+            status_msg = "Created table. This will be backed up on the server filesystem as: "+str(self.backup_path)
             self.backup_df() 
             return status_msg, self.df#, initial_text, codes, codes
             

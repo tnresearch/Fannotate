@@ -26,17 +26,25 @@ def create_ui():
                     gr.Markdown("Upload the dataset and codebook, or initialize a new codebook in the codebook tab.")
                 
                 with gr.Row():
-                    codebook_upload = gr.File(label="Upload Codebook (Optional)")
-                    file_upload = gr.File(label="Upload Excel File")
-                    sheet_select = gr.Dropdown(label="Select Sheet", choices=[], interactive=True)
-                    column_select = gr.Dropdown(label="Select Column", choices=[], interactive=True)
+                    with gr.Column():
+                        file_upload = gr.File(label="Upload Excel File")
+                    with gr.Column():
+                        sheet_select = gr.Dropdown(label="Select Sheet", choices=[], interactive=True)
+                        column_select = gr.Dropdown(label="Select Column", choices=[], interactive=True) 
+                        upload_status = gr.Textbox(label="Upload Status", interactive=False)
+                        load_data_btn = gr.Button("Create annotation table", variant="primary")#Load Data
+                # with gr.Row():
+                #     gr.Markdown("## Upload codebook")
+                # with gr.Row():
+                #     with gr.Column():
+                #         codebook_upload = gr.File(label="Upload Codebook (Optional)")
+                
+                #with gr.Row():
                 
                 with gr.Row():
-                    load_data_btn = gr.Button("Load Data", variant="primary")
-                    upload_status = gr.Textbox(label="Upload Status", interactive=False)
-                
+                    gr.Markdown("## Data preview")
                 with gr.Row():
-                    preview_df = gr.DataFrame(interactive=False, visible=False)
+                    preview_df = gr.DataFrame(interactive=False, visible=True)
 
             # Settings Tab
 
@@ -76,13 +84,17 @@ def create_ui():
             # Simplified Codebook Tab
             with gr.Tab("📓 Codebook"):
                 with gr.Row():
-                    gr.Markdown("Codebook-editor will be here.")
+                    gr.Markdown("## Annotation codebook")
+                with gr.Row():
+                    gr.Markdown("Upload existing codebook or initialize a new one.")
+                with gr.Row():
+                    codebook_upload = gr.File(label="Upload Codebook (Optional)")
+                    new_codebook_btn = gr.Button("New Codebook")
                 with gr.Row():
                     codes_display = gr.JSON(label="Current Codebook")
-                with gr.Row():
-                    gr.Markdown("Initialize a new, empty codebook.")
-                with gr.Row():
-                    new_codebook_btn = gr.Button("New Codebook")
+                # with gr.Row():
+                #     gr.Markdown("Initialize a new, empty codebook.")
+                # with gr.Row():
 
             # LLM Auto-fill Tab
             with gr.Tab("🤖 Auto-fill"):
@@ -142,13 +154,6 @@ def create_ui():
 
             # Download Tab
             with gr.Tab("💾 Download"):
-                # with gr.Row():
-                #     gr.Markdown("## Download data")
-                # with gr.Row():
-                #     gr.Markdown("<span style='color: darkgrey'>Download the annotated data as excel.</span>")
-                # download_btn = gr.Button("Download Annotated File", variant="primary")
-                # download_output = gr.File(label="Download")
-                # download_status = gr.Textbox(label="Status", interactive=False)
                 with gr.Row():
                     gr.Markdown("## Download data")
                 
@@ -197,34 +202,7 @@ def create_ui():
                     []
                 )
             
-        
-
-        # def handle_codebook_upload(file, codebook_file):
-        #     """
-        #     Purpose: Processes the upload of data file and optional codebook file. Used in the Upload Data tab when initializing a new annotation project.
-        #     Inputs: file - Excel file containing texts to annotate, codebook_file - Optional JSON codebook file
-        #     Outputs: Status message, sheet selector dropdown, current codebook, and three category selection dropdowns
-        #     """
-        #     codebook_status = ""
-        #     current_codebook = []
-        #     codes = []
-            
-        #     if codebook_file:
-        #         codebook_status = annotator.upload_codebook(codebook_file)
-        #         current_codebook = annotator.load_codebook()
-        #         codes = [code["attribute"] for code in current_codebook]
-            
-        #     status, sheets, _ = annotator.upload_file(file, codebook_file)
-            
-        #     return (
-        #         f"{status}\n{codebook_status}",
-        #         gr.Dropdown(choices=sheets),
-        #         current_codebook,
-        #         gr.Dropdown(choices=codes),
-        #         gr.Dropdown(choices=codes),
-        #         gr.Dropdown(choices=codes)
-        #     )
-        def handle_codebook_upload(file, codebook_file):
+        def handle_file_upload(file, codebook_file):
             """Handle initial file upload and codebook"""
             codebook_status = ""
             current_codebook = []
@@ -249,7 +227,7 @@ def create_ui():
         
         # File upload handler
         file_upload.change(
-            fn=handle_codebook_upload,
+            fn=handle_file_upload,
             inputs=[file_upload, codebook_upload],
             outputs=[upload_status, sheet_select, codes_display, 
                     code_select, value_select, llm_code_select, preview_df]
@@ -270,7 +248,9 @@ def create_ui():
                     value_select, llm_code_select, codes_display]
         )
 
-        codebook_upload.change(fn=handle_codebook_upload, 
+        ######## codebook
+
+        codebook_upload.change(fn=handle_file_upload, 
                                inputs=[file_upload, codebook_upload], 
                                outputs=[upload_status, sheet_select, codes_display, code_select, value_select, llm_code_select])
         
@@ -356,42 +336,6 @@ def create_ui():
                 return gr.Dropdown(choices=[])
             values = annotator.get_code_values(code_name)
             return gr.Dropdown(choices=values, value=None, allow_custom_value=True)
-
-        # def apply_settings(sheet, column, url, api_key, model):
-        #     """
-        #     Purpose: Configures the application settings including LLM connection and data source. Used in the Settings tab to initialize or update the application configuration.
-        #     Inputs: sheet - Selected Excel sheet, column - Selected text column, url - LLM endpoint URL, api_key - LLM API key, model - LLM model name
-        #     Outputs: Status message, preview DataFrame, initial text, category dropdowns, review status, and current codebook
-        #     """
-        #     from lm import update_llm_config
-            
-        #     # Update LLM configuration
-        #     update_llm_config(url, api_key, model)
-            
-        #     # Load settings and get initial data
-        #     status, preview, transcript, codes1, codes2 = annotator.load_settings(sheet, column)
-            
-        #     # Get the current codebook and extract codes
-        #     current_codebook = annotator.load_codebook()
-        #     codes = [code["attribute"] for code in current_codebook]
-            
-        #     # Get initial review status
-        #     initial_review_status = "✅" if annotator.df.iloc[0]['is_reviewed'] else "❌"
-            
-        #     return (
-        #         f"Settings applied successfully. LLM endpoint: {url}, Model: {model}\n{status}",
-        #         process_df_for_display(preview),  # Make sure DataFrame is properly formatted
-        #         transcript,
-        #         gr.Dropdown(choices=codes),  # Update code_select dropdown
-        #         gr.Dropdown(choices=codes),  # Update value_select dropdown
-        #         initial_review_status,
-        #         gr.Dropdown(choices=codes),  # Update llm_code_select dropdown
-        #         current_codebook  # Update codes_display
-        #     )
-        
-        # load_settings_btn.click(fn=apply_settings, 
-        #                         inputs=[sheet_select, column_select, llm_url, llm_api_key, llm_model], 
-        #                         outputs=[settings_status, preview_df, transcript_box, code_select, value_select, review_status, llm_code_select, codes_display])
         
         sheet_select.change(fn=lambda x: gr.Dropdown(choices=annotator.get_columns(x)), 
                             inputs=[sheet_select], 

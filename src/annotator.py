@@ -14,6 +14,7 @@ class TranscriptionAnnotator:
         self.upload_dir = Path("uploads")
         self.upload_dir.mkdir(exist_ok=True)
         self.codebook_path = self.upload_dir / "codebook.json"
+        self.backup_path = self.upload_dir / "temp_annotations.xlsx"
 
     def backup_existing_codebook(self):
         if self.codebook_path.exists():
@@ -94,18 +95,10 @@ class TranscriptionAnnotator:
             self.selected_column = 'text'
             self.current_index = 0
             
-            # Load existing codebook
-            codes = []
-            if self.codebook_path.exists():
-                codes = [code["attribute"] for code in self.load_codebook()]
-                status_msg = "Settings applied successfully"
-            else:
-                self.create_codebook()
-                status_msg = f"Settings applied and new codebook created at {self.codebook_path}"
-            
-            initial_text = self.df.iloc[0]['text']
-            
-            return status_msg, self.df, initial_text, codes, codes
+            #initial_text = self.df.iloc[0]['text']
+            status_msg = "Loaded df. This will be backed up as: "+str(self.backup_path)
+            self.backup_df() 
+            return status_msg, self.df#, initial_text, codes, codes
             
         except Exception as e:
             return f"Error applying settings: {str(e)}", gr.DataFrame(visible=False), "", [], []
@@ -154,6 +147,7 @@ class TranscriptionAnnotator:
             
             self.df.at[self.current_index, code_name] = value
             self.df.at[self.current_index, 'is_reviewed'] = True
+            self.backup_df()
             return f"Saved {value} for {code_name} at index {self.current_index}", self.df
         except Exception as e:
             return f"Error saving annotation: {str(e)}", None
@@ -208,3 +202,11 @@ class TranscriptionAnnotator:
         if self.df is not None:
             return self.df.columns.tolist()
         return []
+    
+    def backup_df(self):
+        """Automatically backup the DataFrame to Excel"""
+        if self.df is not None:
+            try:
+                self.df.to_excel(self.backup_path, index=False)
+            except Exception as e:
+                print(f"Error backing up DataFrame: {e}")

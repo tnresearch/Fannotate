@@ -147,6 +147,10 @@ def create_ui():
                     reload_codebook_btn_2 = gr.Button("Reload Codebook")
                     annotate_next_btn = gr.Button("Annotate and continue to next", variant="primary")
                 transcript_box = gr.TextArea(label="Text Content", interactive=False)
+                with gr.Row():
+                    gr.Markdown("## Autofill summary")
+                with gr.Row():
+                    autofill_summary = gr.TextArea(label="Auto-fill Summary", interactive=False)
 
             # Stats Tab
             with gr.Tab("📊 Status"):
@@ -514,6 +518,33 @@ def create_ui():
         
         ### Annotation tab
 
+        def get_autofill_summary(index):
+            """Get concatenated values from all autofill columns for the current index"""
+            try:
+                if annotator.df is None or index >= len(annotator.df):
+                    return ""
+                    
+                # Get all columns that start with 'autofill_'
+                autofill_cols = [col for col in annotator.df.columns if col.startswith('autofill_')]
+                
+                if not autofill_cols:
+                    return "No auto-fill annotations found"
+                    
+                # Build summary string
+                summary = []
+                for col in autofill_cols:
+                    value = annotator.df.at[index, col]
+                    # Clean column name by removing 'autofill_' prefix
+                    clean_col = col.replace('autofill_', '')
+                    summary.append(f"{clean_col}: {value}")
+                    
+                return "\n".join(summary)
+                
+            except Exception as e:
+                return f"Error getting auto-fill summary: {str(e)}"
+            
+        
+
         def annotate_and_next(code_name, value):
             """
             Purpose: Saves the current annotation and automatically moves to the next text entry. Used in the Review tab when annotating texts sequentially.
@@ -522,20 +553,25 @@ def create_ui():
             """
             try:
                 if not code_name or not value:
-                    return "Please select both category and value", None, None, None
+                    return "Please select both category and value", None, None, None, ""
+                    
                 status, df = annotator.save_annotation(code_name, value)
                 if not status.startswith("Saved"):
-                    return status, None, None, None
+                    return status, None, None, None, ""
+                    
                 text, idx = annotator.navigate_transcripts("next")
                 review_status_text = "✅" if annotator.df.iloc[idx]['is_reviewed'] else "❌"
-                return status, text, idx, review_status_text
+                autofill_summary = get_autofill_summary(idx)
+                
+                return status, text, idx, review_status_text, autofill_summary
+                
             except Exception as e:
                 print(f"Error in annotate_and_next: {e}")
-                return "Error during annotation", None, None, "❌"
+                return "Error during annotation", None, None, "❌", ""
             
         annotate_next_btn.click(fn=annotate_and_next, 
                                 inputs=[code_select, value_select], 
-                                outputs=[annotation_status, transcript_box, current_index, review_status])
+                                outputs=[annotation_status, transcript_box, current_index, review_status, autofill_summary])
 
         def navigate_and_update(direction):
             """
@@ -546,18 +582,22 @@ def create_ui():
             try:
                 text, idx = annotator.navigate_transcripts(direction)
                 if text is None or idx is None:
-                    return None, None, "❌"
+                    return None, None, "❌", ""
+                    
                 review_status_text = "✅" if annotator.df.iloc[idx]['is_reviewed'] else "❌"
-                return text, idx, review_status_text
+                autofill_summary = get_autofill_summary(idx)
+                
+                return text, idx, review_status_text, autofill_summary
+                
             except Exception as e:
                 print(f"Error in navigate_and_update: {e}")
-                return None, None, "❌"
+                return None, None, "❌", ""
 
         prev_btn.click(fn=lambda: navigate_and_update("prev"), 
-                       outputs=[transcript_box, current_index, review_status])
+                       outputs=[transcript_box, current_index, review_status, autofill_summary])
 
         next_btn.click(fn=lambda: navigate_and_update("next"), 
-                       outputs=[transcript_box, current_index, review_status])
+                       outputs=[transcript_box, current_index, review_status, autofill_summary])
         
         ### Download tab
 

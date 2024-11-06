@@ -18,6 +18,25 @@ def create_ui():
         
         with gr.Tabs():
             # Upload Tab
+            with gr.Tab("📜 Getting started"):
+                try:
+                    # with open("instructions.md", "r") as f:
+                    #     instructions = f.read()
+                    gr.Markdown("""## Overview
+Fannotate is a tool for *faster* text annotation aided by LLMs. Central to Fannotate is the *codebook* (annotation guidelines) which help the LLM do an initial guess at the categories and labels. Fannotate lets you create any attributes to the text you'd like, which can then help you annotate the text faster, without having to read the whole transcript.""")
+                    gr.Image("../bin/procedure.png", 
+                            label=None,  # Removes the label
+                            show_label=False,  # Ensures no label space is reserved
+                            container=False,  # Removes the container box
+                            show_download_button=False,  # Removes the download button
+                            interactive=False,  # Prevents user interaction
+                            height="auto",  # Adjusts height automatically
+                            width="700px"#"100%"  # Takes full width of parent container
+                            )
+                    # gr.Markdown(instructions)
+                    gr.Markdown("<br><br><a href='https://github.com/tnresearch/Fannotate/blob/main/userguide.md'>User guide</a>")
+                except FileNotFoundError:
+                    gr.Markdown("Instructions file not found. Please create instructions.md")
             with gr.Tab("📁 Upload Data"):
                 with gr.Row():
                     gr.Markdown("## Upload data")
@@ -113,7 +132,7 @@ def create_ui():
                     progress_bar = gr.Textbox(label="Progress", interactive=False)
 
             # Custom Tab
-            with gr.Tab("🤖 Custom"):
+            with gr.Tab("🤖 Custom-fill"):
                 with gr.Row():
                     gr.Markdown("## Custom annotation")
                 with gr.Row():
@@ -151,6 +170,7 @@ def create_ui():
                     gr.Markdown("## Autofill summary")
                 with gr.Row():
                     autofill_summary = gr.TextArea(label="Auto-fill Summary", interactive=False)
+                    customfill_summary = gr.TextArea(label="Custom-fill Summary", interactive=False)
 
             # Stats Tab
             with gr.Tab("📊 Status"):
@@ -497,6 +517,8 @@ def create_ui():
             """
             if not output_column:
                 return "Please specify an output column name"
+            # specific column name for custom annotations
+            output_column = "custom_"+output_column
             try:
                 df, status = batch_process_transcripts(
                     annotator.df,
@@ -542,7 +564,30 @@ def create_ui():
                 
             except Exception as e:
                 return f"Error getting auto-fill summary: {str(e)}"
-            
+        def get_customfill_summary(index):
+            """Get concatenated values from all autofill columns for the current index"""
+            try:
+                if annotator.df is None or index >= len(annotator.df):
+                    return ""
+                    
+                # Get all columns that start with 'autofill_'
+                autofill_cols = [col for col in annotator.df.columns if col.startswith('custom_')]
+                
+                if not autofill_cols:
+                    return "No custom-fill annotations found"
+                    
+                # Build summary string
+                summary = []
+                for col in autofill_cols:
+                    value = annotator.df.at[index, col]
+                    # Clean column name by removing 'autofill_' prefix
+                    clean_col = col.replace('custom_', '')
+                    summary.append(f"{clean_col}: {value}")
+                    
+                return "\n".join(summary)
+                
+            except Exception as e:
+                return f"Error getting custom-fill summary: {str(e)}"
         
 
         def annotate_and_next(code_name, value):
@@ -562,8 +607,9 @@ def create_ui():
                 text, idx = annotator.navigate_transcripts("next")
                 review_status_text = "✅" if annotator.df.iloc[idx]['is_reviewed'] else "❌"
                 autofill_summary = get_autofill_summary(idx)
+                customfill_summary = get_customfill_summary(idx)
                 
-                return status, text, idx, review_status_text, autofill_summary
+                return status, text, idx, review_status_text, autofill_summary, customfill_summary
                 
             except Exception as e:
                 print(f"Error in annotate_and_next: {e}")
@@ -571,7 +617,7 @@ def create_ui():
             
         annotate_next_btn.click(fn=annotate_and_next, 
                                 inputs=[code_select, value_select], 
-                                outputs=[annotation_status, transcript_box, current_index, review_status, autofill_summary])
+                                outputs=[annotation_status, transcript_box, current_index, review_status, autofill_summary, customfill_summary])
 
         def navigate_and_update(direction):
             """
@@ -586,18 +632,19 @@ def create_ui():
                     
                 review_status_text = "✅" if annotator.df.iloc[idx]['is_reviewed'] else "❌"
                 autofill_summary = get_autofill_summary(idx)
+                customfill_summary = get_customfill_summary(idx)
                 
-                return text, idx, review_status_text, autofill_summary
+                return text, idx, review_status_text, autofill_summary, customfill_summary
                 
             except Exception as e:
                 print(f"Error in navigate_and_update: {e}")
                 return None, None, "❌", ""
 
         prev_btn.click(fn=lambda: navigate_and_update("prev"), 
-                       outputs=[transcript_box, current_index, review_status, autofill_summary])
+                       outputs=[transcript_box, current_index, review_status, autofill_summary, customfill_summary])
 
         next_btn.click(fn=lambda: navigate_and_update("next"), 
-                       outputs=[transcript_box, current_index, review_status, autofill_summary])
+                       outputs=[transcript_box, current_index, review_status, autofill_summary, customfill_summary])
         
         ### Download tab
 

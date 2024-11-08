@@ -1,40 +1,184 @@
 {
-    "created_at": "27/10/2024 15:52:41",
-    "dataset": "LM_short.xlsx",
+    "created_at": "08/11/2024 16:27:30",
+    "dataset": "TN.xlsx",
     "codes": [
         {
-            "attribute": "Language",
-            "description": "The language used in the text.",
+            "attribute": "Sentiment",
+            "description": "The sentiment of the conversation.",
+            "type": "categorical",
+            "instruction_start": "Her kommer det en liste med kategorier samt deres beskrivelse:\n\n",
+            "instruction_end": "Her er tekst fra en samtale mellom kundeservice og en kunde. Angi hvilken kategori samtalen tilhører, og svar kun med navnet på kategorien:\n",
             "categories": [
                 {
-                    "category": "French",
-                    "description": "If the text is written in French."
+                    "category": "Positiv",
+                    "description": "If the transcript mainly has a positive tone."
                 },
                 {
-                    "category": "English",
-                    "description": "If the text is written in English."
+                    "category": "Neutral",
+                    "description": "If the transcript mainly has a neutral tone."
                 },
                 {
-                    "category": "Danish",
-                    "description": "If the text written in Danish."
+                    "category": "Negativ",
+                    "description": "If the transcript mainly has a pnegative or angry/aggressive tone."
                 }
             ]
         },
         {
-            "attribute": "Sentiment",
-            "description": "The sentiment of the text.",
+            "attribute": "Customer_Question",
+            "description": "A brief description of the customer's main inquiry or issue.",
+            "type": "freetext",
+            "instruction_start": "Oppsummer kundens hovedspørsmål eller problem i en kort setning:\n\n",
+            "instruction_end": "Les samtalen og gi en kort oppsummering av kundens hovedspørsmål. Svar med maksimalt én setning:\n",
             "categories": [
                 {
-                    "category": "Positive",
-                    "description": "If the text is written in a positive or happy tone."
+                    "category": "freetext",
+                    "description": "Write a concise one-sentence summary of the customer's main question or issue."
+                }
+            ]
+        },
+        {
+            "attribute": "Proposed_Solution",
+            "description": "A brief description of the solution provided or action taken.",
+            "type": "freetext",
+            "instruction_start": "Oppsummer løsningen eller handlingen som ble foreslått:\n\n",
+            "instruction_end": "Les samtalen og gi en kort oppsummering av løsningen som ble foreslått. Svar med maksimalt én setning:\n",
+            "categories": [
+                {
+                    "category": "freetext",
+                    "description": "Write a concise one-sentence summary of the solution or action proposed."
+                }
+            ]
+        },
+        {
+            "attribute": "Call_Summary",
+            "description": "A brief summary of the entire customer interaction.",
+            "type": "freetext",
+            "instruction_start": "Gi en kort oppsummering av hele samtalen:\n\n",
+            "instruction_end": "Les samtalen og gi en kort oppsummering av hele interaksjonen. Svar med maksimalt to setninger:\n",
+            "categories": [
+                {
+                    "category": "freetext",
+                    "description": "Write a concise two-sentence summary of the entire customer interaction."
+                }
+            ]
+        },
+        {
+            "attribute": "Intent",
+            "description": "The primary purpose or intention of the customer's call.",
+            "type": "categorical",
+            "instruction_start": "Her kommer det en liste med henvendelsestyper og deres beskrivelse:\n\n",
+            "instruction_end": "Her er tekst fra en samtale mellom kundeservice og en kunde. Angi hvilken henvendelsestype samtalen gjelder, og svar kun med navnet på kategorien:\n",
+            "categories": [
+                {
+                    "category": "Klage",
+                    "description": "Kunden uttrykker misnøye eller klager på et produkt eller en tjeneste."
                 },
                 {
-                    "category": "Neutral",
-                    "description": "If the text is written in neutral tone."
+                    "category": "Teknisk_Support",
+                    "description": "Kunden søker teknisk hjelp eller feilsøking for et produkt eller en tjeneste."
                 },
                 {
-                    "category": "Negative",
-                    "description": "If the text is written in a negative or angry tone."
+                    "category": "Informasjon",
+                    "description": "Kunden ber om generell informasjon om produkter, tjenester eller priser."
+                },
+                {
+                    "category": "Bestilling",
+                    "description": "Kunden ønsker å bestille eller kjøpe et nytt produkt eller en tjeneste."
+                },
+                {
+                    "category": "Oppsigelse",
+                    "description": "Kunden ønsker å si opp eller avslutte et abonnement eller en tjeneste."
+                }
+            ]
+        },
+        {
+            "attribute": "Resolution",
+            "description": "The outcome of the customer service interaction.",
+            "type": "categorical",
+            "instruction_start": "Her kommer det en liste med utfall av kundesamtaler og deres beskrivelse:\n\n",
+            "instruction_end": "Her er tekst fra en samtale mellom kundeservice og en kunde. Angi hvilket utfall samtalen hadde, og svar kun med navnet på kategorien:\n",
+            "categories": [
+                {
+                    "category": "Løst",
+                    "description": "Kundens henvendelse ble fullstendig løst i løpet av samtalen."
+                },
+                {
+                    "category": "Delvis_Løst",
+                    "description": "Noen aspekter av kundens henvendelse ble løst, men ikke alle."
+                },
+                {
+                    "category": "Uløst",
+                    "description": "Kundens henvendelse kunne ikke løses i løpet av samtalen."
+                },
+                {
+                    "category": "Videresendt",
+                    "description": "Saken ble videresendt til en annen avdeling eller spesialist."
+                }
+            ]
+        },
+        {
+            "attribute": "Complexity",
+            "description": "The level of complexity of the customer's issue.",
+            "type": "categorical",
+            "instruction_start": "Her kommer det en liste med kompleksitetsnivåer og deres beskrivelse:\n\n",
+            "instruction_end": "Her er tekst fra en samtale mellom kundeservice og en kunde. Angi hvilket kompleksitetsnivå samtalen hadde, og svar kun med navnet på kategorien:\n",
+            "categories": [
+                {
+                    "category": "Enkel",
+                    "description": "Rutinehenvendelse som kan løses med standardprosedyrer."
+                },
+                {
+                    "category": "Middels",
+                    "description": "Krever noe utredning eller teknisk kompetanse."
+                },
+                {
+                    "category": "Kompleks",
+                    "description": "Krever omfattende utredning eller involvering av flere avdelinger."
+                }
+            ]
+        },
+        {
+            "attribute": "Product",
+                "description": "The Telenor product category discussed in the text.",
+                "type": "categorical",
+                "instruction_start": "Her kommer det en liste med produktkategorier hos Telenor:\n\n",
+                "instruction_end": "Her er tekst fra en samtale mellom kundeservice og en kunde. Angi hvilken produktkategori samtalen handler om, og svar kun med navnet på produktkategorien:\n",
+                "categories": [
+                {
+                    "category": "Mobil",
+                    "description": "Telenor tilbyr mobilabonnementer med bred dekning, ulike datapakker og tilbud på siste telefonmodeller. Kategorien inneholder også datapakker og SIM-kort."
+                },
+                {
+                    "category": "Forsikring",
+                    "description": "Telenor tilbyr forsikring for mobiltelefoner, som dekker tap, tyveri og skade, samt andre forsikringsprodukter gjennom samarbeidspartnere. Produktene er Plussforsikring og Skjermforsikring. Kategorien inneholder også henvendelser relatert til forsikringssaker, som behandles i en egen avdeling."
+                },
+                {
+                    "category": "Annet/Ikke_oppgitt",
+                    "description": "Kategorien for diverse tjenester og produkter som ikke er spesifikt oppgitt."
+                },
+                {
+                    "category": "E-post",
+                    "description": "Telenor leverer sikre og pålitelige e-posttjenester med funksjoner for personlig og profesjonell bruk, inkludert spamfiltrering og god brukervennlighet."
+                },
+                {
+                    "category": "Bredbånd-mobilt",
+                    "description": "Telenors mobile bredbåndstjenester gir rask internettilgang på farten, med forskjellige datapakker og enhetsalternativer. Kategorien inneholder produktene Trådløst Bredbånd, Mobilt Bredbånd, M2M og IoT."
+                },
+                {
+                    "category": "Tjenester/Apper",
+                    "description": "Telenor tilbyr digitale tjenester og apper, fra sikkerhetsløsninger og skytjenester til underholdningsapper med musikk og video. Eksempler på tjenester er Min Sky, Se Hvem, Orden, Nettvern. I kategorien finnes også Bank ID og Telenor ID."
+                },
+                {
+                    "category": "Bredbånd",
+                    "description": "Telenors faste bredbånd gir pålitelig internett med ulike hastighetsalternativer, kombinert med kundevennlig service og teknisk support. I kategorien finnes fiber og coax bredbånd."
+                },
+                {
+                    "category": "TV",
+                    "description": "Telenors TV-tjenester inkluderer et utvalg av kanalpakker, strømmetjenester og muligheter for opptak, alt tilpasset kundens underholdningsbehov. Sentralt er produktet T-We, som er Telenor TV-løsning."
+                },
+                {
+                    "category": "Telefoni",
+                    "description": "Telenor tilbyr fasttelefonitjenester med ulike abonnementer og funksjoner, samt gode internasjonale samtalepriser for kunder med familie og venner i utlandet. I denne kategorien finnes IP-telefoni og Bredbåndstelefoni."
                 }
             ]
         }

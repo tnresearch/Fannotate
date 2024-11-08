@@ -2,6 +2,5 @@
 .DS_Store
 __pycache__/
 src/uploads/
-src/uploads/*
 src/secrets/
 commands.txt

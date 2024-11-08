@@ -445,31 +445,55 @@ Fannotate is a tool for *faster* text annotation aided by LLMs. Central to Fanno
             """
             if not code_name or not instruction:
                 return "Please select a category and generate a prompt first"
+            
             try:
-                # Get the valid values for the selected category
-                valid_values = get_category_values(code_name)
-                if not valid_values:
-                    return "No valid values found for the selected category"
+                # Load codebook and find selected category
+                codebook = annotator.load_codebook()
+                selected_code = None
+                for code in codebook:
+                    if code['attribute'] == code_name:
+                        selected_code = code
+                        break
+                        
+                if not selected_code:
+                    return "Selected category not found in codebook"
                     
                 clean_name = clean_column_name(code_name)
                 output_column = f"autofill_{clean_name}"
                 
-                # Create status message with constrained values
-                values_str = ", ".join(valid_values)
-                status_msg = f"Processing with LLM constrained to the following values: [{values_str}]"
+                # Check if category type is categorical or freetext
+                is_categorical = selected_code.get('type', 'categorical') == 'categorical'
                 
-                # Use batch_process_transcripts with the constrained values
-                df, process_status = batch_process_transcripts(
-                    annotator.df,
-                    instruction,
-                    'text',
-                    output_column,
-                    valid_values
-                )
-                
+                if is_categorical:
+                    # Get valid values for categorical type
+                    valid_values = get_category_values(code_name)
+                    if not valid_values:
+                        return "No valid values found for the selected category"
+                    
+                    # Use constrained LLM call
+                    df, process_status = batch_process_transcripts(
+                        annotator.df,
+                        instruction,
+                        'text',
+                        output_column,
+                        valid_values
+                    )
+                    values_str = ", ".join(valid_values)
+                    status_msg = f"Processing with LLM constrained to values: [{values_str}]"
+                    
+                else:
+                    # Use unconstrained LLM call for freetext
+                    df, process_status = batch_process_transcripts(
+                        annotator.df,
+                        instruction,
+                        'text', 
+                        output_column,
+                        None  # No value constraints for freetext
+                    )
+                    status_msg = "Processing with unconstrained LLM for free text response"
+                    
                 if df is not None:
                     annotator.df = df
-                    # back up
                     annotator.backup_df()
                     return f"{status_msg}\n\nAuto-fill completed. Results stored in column: {output_column}"
                 else:

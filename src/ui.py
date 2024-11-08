@@ -124,19 +124,47 @@ def create_ui():
                 # with gr.Row():
 
             # LLM Auto-fill Tab
+            # with gr.Tab("🤖 Auto-fill"):
+            #     with gr.Row():
+            #         gr.Markdown("## Auto annotation")
+            #     with gr.Row():
+            #         gr.Markdown("<span style='color: darkgrey'>Automated annotation of the text using the codebook.</span>")
+            #     with gr.Row():
+            #         llm_code_select = gr.Dropdown(label="Select Category to Auto-fill", choices=[], interactive=True, allow_custom_value=True)
+            #         llm_reload_btn = gr.Button("Reload Categories")
+            #     with gr.Row():
+            #         generate_prompt_btn = gr.Button("Generate Prompt")
+            #         auto_fill_btn = gr.Button("Auto-fill from Codebook", variant="primary")
+            #     with gr.Row():
+            #         llm_instruction = gr.TextArea(label="Codebook instruction for LLM", placeholder="Full prompt.", interactive=True)
+            #         progress_bar = gr.Textbox(label="Progress", interactive=False)
             with gr.Tab("🤖 Auto-fill"):
                 with gr.Row():
                     gr.Markdown("## Auto annotation")
+                    
                 with gr.Row():
-                    gr.Markdown("<span style='color: darkgrey'>Automated annotation of the text using the codebook.</span>")
+                    gr.Markdown("Automated annotation of the text using the codebook.")
+                    
                 with gr.Row():
-                    llm_code_select = gr.Dropdown(label="Select Category to Auto-fill", choices=[], interactive=True, allow_custom_value=True)
+                    # Modify the dropdown to trigger prompt generation on change
+                    llm_code_select = gr.Dropdown(
+                        label="Select Category to Auto-fill", 
+                        choices=[], 
+                        interactive=True, 
+                        allow_custom_value=True
+                    )
                     llm_reload_btn = gr.Button("Reload Categories")
+                    
                 with gr.Row():
-                    generate_prompt_btn = gr.Button("Generate Prompt")
+                    # Remove the generate prompt button since it's no longer needed
                     auto_fill_btn = gr.Button("Auto-fill from Codebook", variant="primary")
+                    
                 with gr.Row():
-                    llm_instruction = gr.TextArea(label="Codebook instruction for LLM", placeholder="Full prompt.", interactive=True)
+                    llm_instruction = gr.TextArea(
+                        label="Codebook instruction for LLM", 
+                        placeholder="Full prompt.", 
+                        interactive=True
+                    )
                     progress_bar = gr.Textbox(label="Progress", interactive=False)
 
             # Custom Tab
@@ -508,35 +536,108 @@ Fannotate is a tool for *faster* text annotation aided by LLMs. Central to Fanno
                             outputs=[progress_bar])
 
 
+        # def generate_prompt(code_name):
+        #     """
+        #     Purpose: Creates a structured prompt for the LLM based on the selected category from the codebook. Used in the Auto-fill tab when generating instructions for automated annotation.
+        #     Inputs: code_name - The category name selected from the codebook
+        #     Outputs: A formatted prompt string containing the category details, or an error message if generation fails
+        #     """
+        #     if not code_name:
+        #         return "Please select a category first"
+        #     try:
+        #         codebook = annotator.load_codebook()
+        #         selected_code = None
+        #         clean_name = clean_column_name(code_name)
+        #         for code in codebook:
+        #             if clean_column_name(code['attribute']) == clean_name:
+        #                 selected_code = code
+        #                 break
+        #         if not selected_code:
+        #             return f"Selected category '{code_name}' not found in codebook"
+        #         prompt = "Please classify the text within one of the following categories:\n\n"
+        #         prompt += json.dumps(selected_code, indent=2)
+        #         prompt += "\n\nText: "
+        #         return prompt
+        #     except Exception as e:
+        #         print(f"Error generating prompt: {e}")
+        #         return f"Error generating prompt: {str(e)}"
+
+        def create_prompt_from_json(json_data):
+            """
+            Converts a JSON codebook entry into a formatted prompt string and appends text if provided.
+            
+            Args:
+                json_data (dict): The JSON codebook entry containing attribute, categories, and instructions
+                text (str): Optional text to append to the prompt
+                
+            Returns:
+                str: A formatted prompt string
+            """
+            try:
+                # Start with the instruction header
+                prompt = json_data.get('instruction_start', '')
+                
+                # Add each category and its description
+                for category in json_data.get('categories', []):
+                    prompt += f"- {category['category']}: {category['description']}\n\n"
+                    
+                # Add the instruction ending
+                prompt += json_data.get('instruction_end', '')
+                
+                return prompt
+                
+            except Exception as e:
+                print(f"Error creating prompt: {str(e)}")
+                return None
+
         def generate_prompt(code_name):
             """
-            Purpose: Creates a structured prompt for the LLM based on the selected category from the codebook. Used in the Auto-fill tab when generating instructions for automated annotation.
-            Inputs: code_name - The category name selected from the codebook
-            Outputs: A formatted prompt string containing the category details, or an error message if generation fails
+            Creates a structured prompt for the LLM based on the selected category and current text.
+            
+            Args:
+                code_name (str): The category name selected from the codebook
+                
+            Returns:
+                str: A formatted prompt string containing the category details and current text
             """
             if not code_name:
                 return "Please select a category first"
+            
             try:
+                # Load codebook and find selected category
                 codebook = annotator.load_codebook()
                 selected_code = None
                 clean_name = clean_column_name(code_name)
+                
                 for code in codebook:
                     if clean_column_name(code['attribute']) == clean_name:
                         selected_code = code
                         break
+                        
                 if not selected_code:
                     return f"Selected category '{code_name}' not found in codebook"
-                prompt = "Please classify the text within one of the following categories:\n\n"
-                prompt += json.dumps(selected_code, indent=2)
-                prompt += "\n\nText: "
+                
+                # Generate prompt using the helper function
+                prompt = create_prompt_from_json(selected_code)
+                
+                if prompt is None:
+                    return "Error generating prompt"
+                    
                 return prompt
+                
             except Exception as e:
                 print(f"Error generating prompt: {e}")
                 return f"Error generating prompt: {str(e)}"
             
-        generate_prompt_btn.click(fn=generate_prompt, 
-                                  inputs=[llm_code_select], 
-                                  outputs=[llm_instruction])
+        # generate_prompt_btn.click(fn=generate_prompt, 
+        #                           inputs=[llm_code_select], 
+        #                           outputs=[llm_instruction])
+        llm_code_select.change(
+            fn=generate_prompt,
+            inputs=[llm_code_select],
+            outputs=[llm_instruction]
+        )
+
 
         def refresh_annotation_dropdowns():
             """

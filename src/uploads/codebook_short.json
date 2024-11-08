@@ -5,6 +5,9 @@
         {
             "attribute": "Language",
             "description": "The language used in the text.",
+            "instruction_start": "Here is a lis of categories and their characteristics:\n\n",
+            "instruction_end": "Please classify the following text into one of the categories, and respond only with the name of the category:\n",
+            "type": "categorical",
             "categories": [
                 {
                     "category": "French",
@@ -23,6 +26,9 @@
         {
             "attribute": "Sentiment",
             "description": "The sentiment of the text.",
+            "instruction_start": "Here is a lis of categories and their characteristics:\n\n",
+            "instruction_end": "Please classify the following text into one of the categories, and respond only with the name of the category:\n",
+            "type": "categorical",
             "categories": [
                 {
                     "category": "Positive",

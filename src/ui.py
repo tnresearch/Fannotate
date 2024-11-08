@@ -18,25 +18,6 @@ def create_ui():
         
         with gr.Tabs():
             # Upload Tab
-            with gr.Tab("📜 Getting started"):
-                try:
-                    # with open("instructions.md", "r") as f:
-                    #     instructions = f.read()
-                    gr.Markdown("""## Overview
-Fannotate is a tool for *faster* text annotation aided by LLMs. Central to Fannotate is the *codebook* (annotation guidelines) which help the LLM do an initial guess at the categories and labels. Fannotate lets you create any attributes to the text you'd like, which can then help you annotate the text faster, without having to read the whole transcript.""")
-                    gr.Image("../bin/procedure.png", 
-                            label=None,  # Removes the label
-                            show_label=False,  # Ensures no label space is reserved
-                            container=False,  # Removes the container box
-                            show_download_button=False,  # Removes the download button
-                            interactive=False,  # Prevents user interaction
-                            height="auto",  # Adjusts height automatically
-                            width="700px"#"100%"  # Takes full width of parent container
-                            )
-                    # gr.Markdown(instructions)
-                    gr.Markdown("<br><br><a href='https://github.com/tnresearch/Fannotate/blob/main/userguide.md'>User guide</a>")
-                except FileNotFoundError:
-                    gr.Markdown("Instructions file not found. Please create instructions.md")
             with gr.Tab("📁 Upload Data"):
                 with gr.Row():
                     gr.Markdown("## Upload data")
@@ -63,30 +44,18 @@ Fannotate is a tool for *faster* text annotation aided by LLMs. Central to Fanno
                 with gr.Row():
                     gr.Markdown("## Data preview")
                 with gr.Row():
-                    preview_df = gr.DataFrame(interactive=False, visible=True)
-
-            # Settings Tab
-
-            # with gr.Tab("⚙️ Settings"):
-            #     with gr.Row():
-            #         sheet_select = gr.Dropdown(label="Select Sheet", choices=[], interactive=True)
-            #         column_select = gr.Dropdown(label="Select Column", choices=[], interactive=True)
-            #     with gr.Row():
-            #         gr.Markdown("### LLM Settings")
-            #         gr.Markdown("Frigg is found at: ```http://172.16.16.48:8000/v1/```")
-            #     with gr.Row():
-            #         llm_url = gr.Textbox(label="LLM Endpoint URL", value="http://192.168.50.155:8000/v1/", placeholder="Enter LLM endpoint URL")
-            #         llm_api_key = gr.Textbox(label="API Key", value="token-abc123", placeholder="Enter API key")
-            #         llm_model = gr.Textbox(label="Model Name", value="google/gemma-2-2b-it", placeholder="Enter model name")
-            #     with gr.Row():
-            #         load_settings_btn = gr.Button("Apply Settings", variant="primary")
-            #         settings_status = gr.Textbox(label="Settings Status", interactive=False)
-            #     preview_df = gr.DataFrame(interactive=False, visible=False)
+                    gr.Markdown("This shows the top 5 rows of your data, and a shortened version of the text to be annotated.")
+                with gr.Row():
+                    preview_df = gr.DataFrame(interactive=False, visible=True,
+                                            #height=300,  # Set specific height in pixels
+                                            row_count=(5, "fixed")  # Show 20 rows before scrolling)
+                    )
             
             with gr.Tab("⚙️ Settings"):
                 with gr.Row():
-                    gr.Markdown("### LLM Settings")
-                    gr.Markdown("Frigg is found at: ```http://172.16.16.48:8000/v1/```")
+                    gr.Markdown("## LLM Settings")
+                with gr.Row():
+                    gr.Markdown("Specify the endpoint, API-key (optional) and Model name of the LLM to use.")
                 
                 with gr.Row():
                     llm_url = gr.Textbox(label="LLM Endpoint URL", 
@@ -99,6 +68,45 @@ Fannotate is a tool for *faster* text annotation aided by LLMs. Central to Fanno
                 with gr.Row():
                     apply_llm_settings_btn = gr.Button("Apply LLM Settings", variant="primary")
                     settings_status = gr.Textbox(label="Settings Status", interactive=False)
+                
+
+                with gr.Row():
+                    gr.Markdown("## LLM Settings Help")
+
+                with gr.Row():
+                    gr.Markdown("""#### Endpoint URL:
+                                    - Frigg is found at: ```http://172.16.16.48:8000/v1/``` 
+                                    - ITX is found at: ```http://192.168.50.155:8000/v1/```""")
+                with gr.Row():                    
+                    gr.Markdown("""#### Model Name:
+                                        It is highly suggested to use *permissively licensed* LLMs that allow distillation/creation of training data for training of competing models (No OpenAI models can be used legally for this, due to <a href="https://openai.com/policies/row-terms-of-use/">OpenAI TOS</a>). """)
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        with gr.Row():
+                            gr.Markdown("""### Gemma Apache 2.0 License:
+
+                                        Requires you to include a copy of the license, document any changes made, retain all copyright, patent and attribution notices. 
+                                        Full license: https://github.com/google-deepmind/gemma/blob/main/LICENSE
+                                        
+                                        - ```google/Gemma-2-2B-it```
+                                        - ```google/Gemma-2-9B-it```
+                                        - ```google/Gemma-2-27B-it```
+                                        """)
+                
+                
+                    with gr.Column(scale=1):
+                        with gr.Row():
+                            gr.Markdown("""
+                                        ### Meta Llama 3 Community License:
+
+                                        Requires you to acknowledge "Built with Meta Llama 3"" in the documentation, and name any derivative model as 'llama-3*', and obtain additional licensing if services exceed 700 million monthly users. 
+                                        Full license: https://www.llama.com/llama3/license/
+                                        
+                                        - ```meta-llama/Llama-3.1-8B-Instruct```
+                                        - ```meta-llama/Llama-3.1-70B-Instruct```
+                                        - ```meta-llama/Llama-3.1-405B-Instruct```
+                                        """)
+                        
 
             # Simplified Codebook Tab
             with gr.Tab("📓 Codebook"):
@@ -177,7 +185,7 @@ Fannotate is a tool for *faster* text annotation aided by LLMs. Central to Fanno
                 gr.Markdown("Status information will be displayed here")
 
             # Download Tab
-            with gr.Tab("💾 Download"):
+            with gr.Tab("💾 Download", id="download_tab") as download_tab:
                 with gr.Row():
                     gr.Markdown("## Download data")
                 
@@ -193,6 +201,24 @@ Fannotate is a tool for *faster* text annotation aided by LLMs. Central to Fanno
                     codebook_output = gr.File(label="Codebook Download")
                     
                 download_status = gr.Textbox(label="Status", interactive=False)
+
+            with gr.Tab("ℹ️ About"):
+                try:
+                    gr.Markdown("""## Overview
+Fannotate is a tool for *faster* text annotation aided by LLMs. Central to Fannotate is the *codebook* (annotation guidelines) which help the LLM do an initial guess at the categories and labels. Fannotate lets you create any attributes to the text you'd like, which can then help you annotate the text faster, without having to read the whole transcript.""")
+                    gr.Image("../bin/procedure.png", 
+                            label=None,  # Removes the label
+                            show_label=False,  # Ensures no label space is reserved
+                            container=False,  # Removes the container box
+                            show_download_button=False,  # Removes the download button
+                            interactive=False,  # Prevents user interaction
+                            height="auto",  # Adjusts height automatically
+                            width="700px"#"100%"  # Takes full width of parent container
+                            )
+                    gr.Markdown("## User guide")
+                    gr.Markdown("The Fannotate user guide <a href='https://github.com/tnresearch/Fannotate/blob/main/userguide.md'>can be found here</a>")
+                except FileNotFoundError:
+                    gr.Markdown("Instructions file not found. Please create instructions.md")
 
         
         #############################
@@ -322,10 +348,10 @@ Fannotate is a tool for *faster* text annotation aided by LLMs. Central to Fanno
             outputs=[settings_status]
         )
 
-        def process_df_for_display(df):
+        def process_df_for_display(df, top_n=5):
             """
             Purpose: Formats a DataFrame for display in the UI by truncating long text fields for better readability. Used whenever a DataFrame needs to be shown in the interface, particularly after file uploads or data processing.
-            Inputs: df - The DataFrame to be processed for display
+            Inputs: df - The DataFrame to be processed for display, number of rows to display
             Outputs: A formatted DataFrame with truncated text fields, or None if processing fails
             """
             if df is None:
@@ -345,7 +371,7 @@ Fannotate is a tool for *faster* text annotation aided by LLMs. Central to Fanno
                         df_display[column] = df_display[column].astype(str).apply(
                             lambda x: x[:500] + '...' if len(x) > 500 else x)
                 
-                return df_display
+                return df_display.head(top_n) #reduce the number of rows displayed
             except Exception as e:
                 print(f"Error processing DataFrame: {e}")
                 return None
@@ -653,4 +679,5 @@ Fannotate is a tool for *faster* text annotation aided by LLMs. Central to Fanno
         
         codebook_download_btn.click(fn=annotator.save_codebook,
                         outputs=[codebook_output, download_status])
+        
         return demo

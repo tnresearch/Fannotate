@@ -201,12 +201,18 @@ def create_ui():
                     value_select = gr.Dropdown(label="Select Value", choices=[], interactive=True, allow_custom_value=True)
                     reload_codebook_btn_2 = gr.Button("Reload Codebook")
                     annotate_next_btn = gr.Button("Annotate and continue to next", variant="primary")
-                transcript_box = gr.TextArea(label="Text Content", interactive=False)
+                #transcript_box = gr.TextArea(label="Text Content", interactive=False)
                 with gr.Row():
-                    gr.Markdown("## Autofill summary")
-                with gr.Row():
-                    autofill_summary = gr.TextArea(label="Auto-fill Summary", interactive=False)
-                    customfill_summary = gr.TextArea(label="Custom-fill Summary", interactive=False)
+                    with gr.Column():
+                        transcript_box = gr.TextArea(label="Text Content", interactive=False)
+                    with gr.Column():
+                        autofill_summary = gr.TextArea(label="Auto-fill Summary", interactive=False)
+                        with gr.Row():
+                            customfill_summary = gr.TextArea(label="Custom-fill Summary", interactive=False)
+                #     gr.Markdown("## Autofill summary")
+                # with gr.Row():
+                #     autofill_summary = gr.TextArea(label="Auto-fill Summary", interactive=False)
+                #     customfill_summary = gr.TextArea(label="Custom-fill Summary", interactive=False)
 
             # Stats Tab
             with gr.Tab("📊 Status"):
@@ -231,10 +237,27 @@ def create_ui():
                 download_status = gr.Textbox(label="Status", interactive=False)
 
             with gr.Tab("ℹ️ About"):
-                try:
-                    gr.Markdown("""## Overview
-Fannotate is a tool for *faster* text annotation aided by LLMs. Central to Fannotate is the *codebook* (annotation guidelines) which help the LLM do an initial guess at the categories and labels. Fannotate lets you create any attributes to the text you'd like, which can then help you annotate the text faster, without having to read the whole transcript.""")
-                    gr.Image("../bin/procedure.png", 
+                #try:
+                gr.Markdown("""## Overview""")
+                with gr.Row():
+                    gr.Markdown("""Fannotate is a tool for *faster* text annotation aided by LLMs. Central to Fannotate is the *codebook* (annotation guidelines) which help the LLM do an initial guess at the categories and labels. Fannotate lets you create any attributes to the text you'd like, which can then help you annotate the text faster, without having to read the whole transcript.""")
+                gr.Image("../bin/concept.png", 
+                        label=None,  # Removes the label
+                        show_label=False,  # Ensures no label space is reserved
+                        container=False,  # Removes the container box
+                        show_download_button=False,  # Removes the download button
+                        interactive=False,  # Prevents user interaction
+                        height="auto",  # Adjusts height automatically
+                        width="400px"#"100%"  # Takes full width of parent container
+                        )
+                
+                
+                with gr.Row():
+                    gr.Markdown("""## Procedure""")
+                
+                with gr.Row():
+                    gr.Markdown("""The intended workflow is based on 1) Creating a codebook, 2) having a LLM auto-annotate the text based on the descriptions in the codebook, and 3) Manual verification of the annotations created. The main difference in quality is determined by the rigorousness of step 3.""")
+                gr.Image("../bin/procedure.png", 
                             label=None,  # Removes the label
                             show_label=False,  # Ensures no label space is reserved
                             container=False,  # Removes the container box
@@ -243,10 +266,13 @@ Fannotate is a tool for *faster* text annotation aided by LLMs. Central to Fanno
                             height="auto",  # Adjusts height automatically
                             width="700px"#"100%"  # Takes full width of parent container
                             )
+                    
+                with gr.Row():
                     gr.Markdown("## User guide")
+                with gr.Row():
                     gr.Markdown("The Fannotate user guide <a href='https://github.com/tnresearch/Fannotate/blob/main/userguide.md'>can be found here</a>")
-                except FileNotFoundError:
-                    gr.Markdown("Instructions file not found. Please create instructions.md")
+                #except FileNotFoundError:
+                #    gr.Markdown("Instructions file not found. Please create instructions.md")
 
         
         #############################

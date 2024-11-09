@@ -32,14 +32,7 @@ def create_ui():
                         sheet_select = gr.Dropdown(label="Select Sheet", choices=[], interactive=True)
                         column_select = gr.Dropdown(label="Select Column", choices=[], interactive=True) 
                         upload_status = gr.Textbox(label="Upload Status", interactive=False)
-                        load_data_btn = gr.Button("Create annotation table", variant="primary")#Load Data
-                # with gr.Row():
-                #     gr.Markdown("## Upload codebook")
-                # with gr.Row():
-                #     with gr.Column():
-                #         codebook_upload = gr.File(label="Upload Codebook (Optional)")
-                
-                #with gr.Row():
+                        load_data_btn = gr.Button("Create annotation table", variant="primary")
                 
                 with gr.Row():
                     gr.Markdown("## Data preview")
@@ -47,8 +40,7 @@ def create_ui():
                     gr.Markdown("This shows the top 5 rows of your data, and a shortened version of the text to be annotated.")
                 with gr.Row():
                     preview_df = gr.DataFrame(interactive=False, visible=True,
-                                            #height=300,  # Set specific height in pixels
-                                            row_count=(5, "fixed")  # Show 20 rows before scrolling)
+                                            row_count=(5, "fixed")  # Show 5 rows before scrolling)
                     )
             
             with gr.Tab("⚙️ Settings"):
@@ -70,15 +62,23 @@ def create_ui():
                     settings_status = gr.Textbox(label="Settings Status", interactive=False)
                 
 
+                # with gr.Row():
+                #     gr.Markdown("Fannotate relies on a OpenAI-like API endpoint. It is recommended to serve the LLM with vLLM which supports all the functionality in Fannotate.")
+
                 with gr.Row():
                     gr.Markdown("## LLM Settings Help")
 
                 with gr.Row():
-                    gr.Markdown("""#### Endpoint URL:
-                                    - Frigg is found at: ```http://172.16.16.48:8000/v1/``` 
-                                    - ITX is found at: ```http://192.168.50.155:8000/v1/```""")
-                with gr.Row():                    
-                    gr.Markdown("""#### Model Name:
+                    gr.Markdown("""### Endpoint URL: 
+                                Fannotate relies on a OpenAI-like API endpoint. It is recommended to serve the LLM with vLLM which supports all the functionality in Fannotate.""")
+                with gr.Row():
+                    gr.Markdown("""
+                                    - Frigg is found at: http://172.16.16.48:8000/v1/
+                                    - ITX is found at: http://192.168.50.155:8000/v1/
+                                <br>
+                                """)
+                with gr.Row():
+                    gr.Markdown("""### Model Name:
                                         It is highly suggested to use *permissively licensed* LLMs that allow distillation/creation of training data for training of competing models (No OpenAI models can be used legally for this, due to <a href="https://openai.com/policies/row-terms-of-use/">OpenAI TOS</a>). """)
                 with gr.Row():
                     with gr.Column(scale=1):
@@ -86,11 +86,14 @@ def create_ui():
                             gr.Markdown("""### Gemma Apache 2.0 License:
 
                                         Requires you to include a copy of the license, document any changes made, retain all copyright, patent and attribution notices. 
-                                        Full license: https://github.com/google-deepmind/gemma/blob/main/LICENSE
+                                        Full license: https://github.com/google-deepmind/gemma/blob/main/LICENSE""")
                                         
-                                        - ```google/Gemma-2-2B-it```
-                                        - ```google/Gemma-2-9B-it```
-                                        - ```google/Gemma-2-27B-it```
+                        
+                        with gr.Row():
+                            gr.Markdown("""Suggested models:
+                                            - ```google/Gemma-2-2B-it```
+                                            - ```google/Gemma-2-9B-it```
+                                            - ```google/Gemma-2-27B-it```
                                         """)
                 
                 
@@ -100,8 +103,11 @@ def create_ui():
                                         ### Meta Llama 3 Community License:
 
                                         Requires you to acknowledge "Built with Meta Llama 3"" in the documentation, and name any derivative model as 'llama-3*', and obtain additional licensing if services exceed 700 million monthly users. 
-                                        Full license: https://www.llama.com/llama3/license/
+                                        Full license: https://www.llama.com/llama3/license/""")
                                         
+                        
+                        with gr.Row():
+                            gr.Markdown("""Suggested models:                                        
                                         - ```meta-llama/Llama-3.1-8B-Instruct```
                                         - ```meta-llama/Llama-3.1-70B-Instruct```
                                         - ```meta-llama/Llama-3.1-405B-Instruct```
@@ -123,21 +129,41 @@ def create_ui():
                 #     gr.Markdown("Initialize a new, empty codebook.")
                 # with gr.Row():
 
-            # LLM Auto-fill Tab
-            # with gr.Tab("🤖 Auto-fill"):
-            #     with gr.Row():
-            #         gr.Markdown("## Auto annotation")
-            #     with gr.Row():
-            #         gr.Markdown("<span style='color: darkgrey'>Automated annotation of the text using the codebook.</span>")
-            #     with gr.Row():
-            #         llm_code_select = gr.Dropdown(label="Select Category to Auto-fill", choices=[], interactive=True, allow_custom_value=True)
-            #         llm_reload_btn = gr.Button("Reload Categories")
-            #     with gr.Row():
-            #         generate_prompt_btn = gr.Button("Generate Prompt")
-            #         auto_fill_btn = gr.Button("Auto-fill from Codebook", variant="primary")
-            #     with gr.Row():
-            #         llm_instruction = gr.TextArea(label="Codebook instruction for LLM", placeholder="Full prompt.", interactive=True)
-            #         progress_bar = gr.Textbox(label="Progress", interactive=False)
+                # In ui.py, modify the codebook tab section
+
+                # New section for adding attributes
+                with gr.Row():
+                    gr.Markdown("## Add New Attribute")
+                
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        attribute_name = gr.Textbox(
+                            label="Attribute Name",
+                            placeholder="Enter the name of the attribute"
+                        )
+                        attribute_description = gr.TextArea(
+                            label="Attribute Description",
+                            placeholder="Describe what this attribute represents"
+                        )
+                    with gr.Column(scale=1):
+                        attribute_type = gr.Dropdown(
+                            label="Attribute Type",
+                            choices=["categorical", "freetext"],
+                            value="categorical"
+                        )
+                        instruction_start = gr.TextArea(
+                            label="Instruction Start",
+                            placeholder="Enter the initial instruction for annotators"
+                        )
+                        instruction_end = gr.TextArea(
+                            label="Instruction End",
+                            placeholder="Enter the final instruction for annotators"
+                        )
+                
+                with gr.Row():
+                    add_attribute_btn = gr.Button("Add Attribute", variant="primary")
+
+
             with gr.Tab("🤖 Auto-fill"):
                 with gr.Row():
                     gr.Markdown("## Auto annotation")
@@ -202,13 +228,14 @@ def create_ui():
                     reload_codebook_btn_2 = gr.Button("Reload Codebook")
                     annotate_next_btn = gr.Button("Annotate and continue to next", variant="primary")
                 #transcript_box = gr.TextArea(label="Text Content", interactive=False)
-                with gr.Row():
-                    with gr.Column():
-                        transcript_box = gr.TextArea(label="Text Content", interactive=False)
+                with gr.Row(): 
                     with gr.Column():
                         autofill_summary = gr.TextArea(label="Auto-fill Summary", interactive=False)
-                        with gr.Row():
-                            customfill_summary = gr.TextArea(label="Custom-fill Summary", interactive=False)
+                    with gr.Column():
+                        customfill_summary = gr.TextArea(label="Custom-fill Summary", interactive=False)
+
+                with gr.Row():
+                    transcript_box = gr.TextArea(label="Text Content", interactive=False)
                 #     gr.Markdown("## Autofill summary")
                 # with gr.Row():
                 #     autofill_summary = gr.TextArea(label="Auto-fill Summary", interactive=False)
@@ -387,7 +414,72 @@ def create_ui():
         new_codebook_btn.click(fn=handle_new_codebook, 
                                outputs=[upload_status, codes_display, code_select, value_select, llm_code_select])
 
+        def add_attribute_to_codebook(name, description, attr_type, instr_start, instr_end):
+            """
+            Purpose: Adds a new attribute to the existing codebook with basic configuration.
+            
+            Args:
+                name (str): Name of the attribute
+                description (str): Description of what the attribute represents
+                attr_type (str): Type of attribute (categorical/freetext)
+                instr_start (str): Initial instruction for annotators
+                instr_end (str): Final instruction for annotators
+            
+            Returns:
+                tuple: (status message, updated codebook JSON)
+            """
+            try:
+                if not name:
+                    return "Error: Attribute name is required", None
+                    
+                # Load existing codebook
+                if not annotator.codebook_path.exists():
+                    annotator.create_new_codebook()
+                    
+                with open(annotator.codebook_path, 'r') as f:
+                    codebook = json.load(f)
+                    
+                # Check if attribute already exists
+                if any(code['attribute'] == name for code in codebook['codes']):
+                    return f"Error: Attribute '{name}' already exists", None
+                    
+                # Create new attribute
+                new_attribute = {
+                    "attribute": name,
+                    "description": description,
+                    "type": attr_type,
+                    "instruction_start": instr_start,
+                    "instruction_end": instr_end,
+                    "categories": []  # Empty list for now, will be populated later
+                }
+                
+                # Add to codebook
+                codebook['codes'].append(new_attribute)
+                
+                # Save updated codebook
+                with open(annotator.codebook_path, 'w') as f:
+                    json.dump(codebook, f, indent=4)
+                    
+                return f"Successfully added attribute: {name}", codebook
+                
+            except Exception as e:
+                return f"Error adding attribute: {str(e)}", None
 
+        # Add the click handler
+        add_attribute_btn.click(
+            fn=add_attribute_to_codebook,
+            inputs=[
+                attribute_name,
+                attribute_description, 
+                attribute_type,
+                instruction_start,
+                instruction_end
+            ],
+            outputs=[
+                upload_status,
+                codes_display
+            ]
+        )
 
         ### Settings
 

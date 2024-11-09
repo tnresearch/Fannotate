@@ -183,6 +183,11 @@ def create_ui():
                             label="Category Name",
                             #placeholder="Enter the name of the category"
                         )
+                        with gr.Row():
+                            category_icon = gr.Textbox(
+                                label="Category Icon (Emoji)",
+                                placeholder="Enter an emoji icon"
+                            )
                     with gr.Column(scale=1):
                         category_description = gr.TextArea(
                             label="Category Description",
@@ -260,16 +265,12 @@ def create_ui():
                 #transcript_box = gr.TextArea(label="Text Content", interactive=False)
                 with gr.Row(): 
                     with gr.Column():
-                        autofill_summary = gr.TextArea(label="Auto-fill Summary", interactive=False)
+                        autofill_summary = gr.TextArea(label="Auto-fill suggestions from LLM:", interactive=False)
                     with gr.Column():
-                        customfill_summary = gr.TextArea(label="Custom-fill Summary", interactive=False)
+                        customfill_summary = gr.TextArea(label="Custom-fill suggestions from LLM:", interactive=False)
 
                 with gr.Row():
                     transcript_box = gr.TextArea(label="Text Content", interactive=False)
-                #     gr.Markdown("## Autofill summary")
-                # with gr.Row():
-                #     autofill_summary = gr.TextArea(label="Auto-fill Summary", interactive=False)
-                #     customfill_summary = gr.TextArea(label="Custom-fill Summary", interactive=False)
 
             # Stats Tab
             with gr.Tab("📊 Status"):
@@ -504,47 +505,78 @@ def create_ui():
                 return (f"Error adding attribute: {str(e)}", None,
                         name, description, attr_type, instr_start, instr_end)
 
-        def add_category_to_attribute(attribute_name, category, description):
-            """
-            Adds a new category to an existing attribute in the codebook
-            """
+        # def add_category_to_attribute(attribute_name, category, description):
+        #     """
+        #     Adds a new category to an existing attribute in the codebook
+        #     """
+        #     try:
+        #         if not all([attribute_name, category, description]):
+        #             return ("Error: All fields are required", None, 
+        #                 attribute_name, category, description)
+                    
+        #         # Load existing codebook
+        #         with open(annotator.codebook_path, 'r') as f:
+        #             codebook = json.load(f)
+                    
+        #         # Find the attribute
+        #         for code in codebook['codes']:
+        #             if code['attribute'] == attribute_name:
+        #                 # Check if category already exists
+        #                 if any(cat['category'] == category for cat in code['categories']):
+        #                     return (f"Error: Category '{category}' already exists in attribute '{attribute_name}'", None,
+        #                         attribute_name, category, description)
+                        
+        #                 # Add new category
+        #                 code['categories'].append({
+        #                     "category": category,
+        #                     "description": description
+        #                 })
+                        
+        #                 # Save updated codebook
+        #                 with open(annotator.codebook_path, 'w') as f:
+        #                     json.dump(codebook, f, indent=4)
+                            
+        #                 # Return success and clear category/description fields but keep attribute selection
+        #                 return (f"Successfully added category '{category}' to attribute '{attribute_name}'", codebook,
+        #                     attribute_name, "", "")
+                        
+        #         return (f"Error: Attribute '{attribute_name}' not found", None,
+        #             attribute_name, category, description)
+                
+        #     except Exception as e:
+        #         return (f"Error adding category: {str(e)}", None,
+        #             attribute_name, category, description)
+        def add_category_to_attribute(attribute_name, category, description, icon):
+            """Adds a new category with an emoji icon to an existing attribute"""
             try:
                 if not all([attribute_name, category, description]):
-                    return ("Error: All fields are required", None, 
-                        attribute_name, category, description)
+                    return ("Error: All fields are required", None,
+                        attribute_name, category, description, icon)
                     
-                # Load existing codebook
                 with open(annotator.codebook_path, 'r') as f:
                     codebook = json.load(f)
                     
-                # Find the attribute
                 for code in codebook['codes']:
                     if code['attribute'] == attribute_name:
-                        # Check if category already exists
                         if any(cat['category'] == category for cat in code['categories']):
-                            return (f"Error: Category '{category}' already exists in attribute '{attribute_name}'", None,
-                                attribute_name, category, description)
-                        
-                        # Add new category
+                            return (f"Error: Category '{category}' already exists", None,
+                                attribute_name, category, description, icon)
+                                
                         code['categories'].append({
                             "category": category,
-                            "description": description
+                            "description": description,
+                            "icon": icon or ""  # Store empty string if no icon provided
                         })
                         
-                        # Save updated codebook
-                        with open(annotator.codebook_path, 'w') as f:
-                            json.dump(codebook, f, indent=4)
-                            
-                        # Return success and clear category/description fields but keep attribute selection
-                        return (f"Successfully added category '{category}' to attribute '{attribute_name}'", codebook,
-                            attribute_name, "", "")
+                with open(annotator.codebook_path, 'w') as f:
+                    json.dump(codebook, f, indent=4)
+                    
+                return (f"Successfully added category '{category}'", codebook,
+                        attribute_name, "", "", "")
                         
-                return (f"Error: Attribute '{attribute_name}' not found", None,
-                    attribute_name, category, description)
-                
             except Exception as e:
                 return (f"Error adding category: {str(e)}", None,
-                    attribute_name, category, description)
+                        attribute_name, category, description, icon)
 
         # Add the click handler
         add_attribute_btn.click(
@@ -572,14 +604,16 @@ def create_ui():
             inputs=[
                 attribute_select,
                 category_name,
-                category_description
+                category_description,
+                category_icon
             ],
             outputs=[
                 upload_status,
                 codes_display,
                 attribute_select,       # Keep selected attribute
                 category_name,         # Clear category name
-                category_description   # Clear category description
+                category_description,   # Clear category description
+                category_icon
             ]
         )
 
@@ -808,6 +842,7 @@ def create_ui():
             try:
                 # Start with the instruction header
                 prompt = json_data.get('instruction_start', '')
+                prompt += "\n\n"
                 
                 # Add each category and its description
                 for category in json_data.get('categories', []):
@@ -815,6 +850,7 @@ def create_ui():
                     
                 # Add the instruction ending
                 prompt += json_data.get('instruction_end', '')
+                prompt += "\n\nText: "
                 
                 return prompt
                 
@@ -923,30 +959,65 @@ def create_ui():
         
         ### Annotation tab
 
+        # def get_autofill_summary(index):
+        #     """Get concatenated values from all autofill columns for the current index"""
+        #     try:
+        #         if annotator.df is None or index >= len(annotator.df):
+        #             return ""
+                    
+        #         # Get all columns that start with 'autofill_'
+        #         autofill_cols = [col for col in annotator.df.columns if col.startswith('autofill_')]
+                
+        #         if not autofill_cols:
+        #             return "No auto-fill annotations found"
+                    
+        #         # Build summary string
+        #         summary = []
+        #         for col in autofill_cols:
+        #             value = annotator.df.at[index, col]
+        #             # Clean column name by removing 'autofill_' prefix
+        #             clean_col = col.replace('autofill_', '')
+        #             summary.append(f"{clean_col}: {value}")
+                    
+        #         return "\n".join(summary)
+                
+        #     except Exception as e:
+        #         return f"Error getting auto-fill summary: {str(e)}"
+            
         def get_autofill_summary(index):
-            """Get concatenated values from all autofill columns for the current index"""
+            """Get concatenated values from all autofill columns with emoji icons"""
             try:
                 if annotator.df is None or index >= len(annotator.df):
                     return ""
                     
-                # Get all columns that start with 'autofill_'
-                autofill_cols = [col for col in annotator.df.columns if col.startswith('autofill_')]
-                
-                if not autofill_cols:
-                    return "No auto-fill annotations found"
+                with open(annotator.codebook_path, 'r') as f:
+                    codebook = json.load(f)
                     
-                # Build summary string
                 summary = []
-                for col in autofill_cols:
-                    value = annotator.df.at[index, col]
-                    # Clean column name by removing 'autofill_' prefix
-                    clean_col = col.replace('autofill_', '')
-                    summary.append(f"{clean_col}: {value}")
-                    
+                for column in annotator.df.columns:
+                    if column.startswith('autofill_'):
+                        value = annotator.df.iloc[index][column]
+                        if pd.notna(value):
+                            # Get clean column name by removing 'autofill_' prefix
+                            clean_col = column.replace('autofill_', '')
+                            # Find the corresponding icon
+                            attribute = column.replace('autofill_', '')
+                            for code in codebook['codes']:
+                                if code['attribute'] == attribute:
+                                    for cat in code['categories']:
+                                        if cat['category'] == value:
+                                            icon = cat.get('icon', '')
+                                            summary.append(f"{clean_col}: {icon} {value}")
+                                            break
+                                    break
+                            
                 return "\n".join(summary)
                 
             except Exception as e:
-                return f"Error getting auto-fill summary: {str(e)}"
+                print(f"Error getting autofill summary: {e}")
+                return ""
+        
+
         def get_customfill_summary(index):
             """Get concatenated values from all autofill columns for the current index"""
             try:

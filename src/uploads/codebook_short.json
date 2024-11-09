@@ -11,15 +11,18 @@
             "categories": [
                 {
                     "category": "French",
-                    "description": "If the text is written in French."
+                    "description": "If the text is written in French.",
+                    "icon": "🇫🇷"
                 },
                 {
                     "category": "English",
-                    "description": "If the text is written in English."
+                    "description": "If the text is written in English.",
+                    "icon": "🇬🇧"
                 },
                 {
                     "category": "Danish",
-                    "description": "If the text written in Danish."
+                    "description": "If the text written in Danish.",
+                    "icon": "🇩🇰"
                 }
             ]
         },
@@ -32,15 +35,18 @@
             "categories": [
                 {
                     "category": "Positive",
-                    "description": "If the text is written in a positive or happy tone."
+                    "description": "If the text is written in a positive or happy tone.",
+                    "icon": "😍"
                 },
                 {
                     "category": "Neutral",
-                    "description": "If the text is written in neutral tone."
+                    "description": "If the text is written in neutral tone.",
+                    "icon": "😐"
                 },
                 {
                     "category": "Negative",
-                    "description": "If the text is written in a negative or angry tone."
+                    "description": "If the text is written in a negative or angry tone.",
+                    "icon": "😡"
                 }
             ]
         }

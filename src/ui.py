@@ -123,6 +123,9 @@ def create_ui():
                 with gr.Row():
                     codebook_upload = gr.File(label="Upload Codebook (Optional)")
                     new_codebook_btn = gr.Button("New Codebook")
+                
+                with gr.Row():
+                    gr.Markdown("## Current codebook")
                 with gr.Row():
                     codes_display = gr.JSON(label="Current Codebook")
                 # with gr.Row():
@@ -163,7 +166,34 @@ def create_ui():
                 with gr.Row():
                     add_attribute_btn = gr.Button("Add Attribute", variant="primary")
 
+                with gr.Row():
+                    gr.Markdown("## Add Category to Attribute")
 
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        attribute_select = gr.Dropdown(
+                            label="Select Attribute",
+                            choices=[],
+                            interactive=True,
+                            allow_custom_value=False,
+                            #placeholder="Choose an attribute to add categories to"
+                        )
+                        reload_attributes_btn = gr.Button("🔄 Reload Attributes")
+                        category_name = gr.Textbox(
+                            label="Category Name",
+                            #placeholder="Enter the name of the category"
+                        )
+                    with gr.Column(scale=1):
+                        category_description = gr.TextArea(
+                            label="Category Description",
+                            #placeholder="Describe what this category represents"
+                        )
+
+                with gr.Row():
+                    add_category_btn = gr.Button("Add Category", variant="primary")
+
+
+            ######## Auto fill ############
             with gr.Tab("🤖 Auto-fill"):
                 with gr.Row():
                     gr.Markdown("## Auto annotation")
@@ -379,7 +409,9 @@ def create_ui():
                     value_select, llm_code_select, codes_display]
         )
 
-        ######## codebook
+        ################################################
+        # Codebook
+        ################################################
 
         codebook_upload.change(fn=handle_file_upload, 
                                inputs=[file_upload, codebook_upload], 
@@ -414,23 +446,26 @@ def create_ui():
         new_codebook_btn.click(fn=handle_new_codebook, 
                                outputs=[upload_status, codes_display, code_select, value_select, llm_code_select])
 
+
+        def update_attribute_choices():
+            """Updates the attribute dropdown with current codebook attributes"""
+            try:
+                codebook = annotator.load_codebook()
+                attributes = [code["attribute"] for code in codebook]
+                return gr.Dropdown(choices=attributes)
+            except Exception as e:
+                print(f"Error updating attribute choices: {e}")
+                return gr.Dropdown(choices=[])
+
+
         def add_attribute_to_codebook(name, description, attr_type, instr_start, instr_end):
             """
             Purpose: Adds a new attribute to the existing codebook with basic configuration.
-            
-            Args:
-                name (str): Name of the attribute
-                description (str): Description of what the attribute represents
-                attr_type (str): Type of attribute (categorical/freetext)
-                instr_start (str): Initial instruction for annotators
-                instr_end (str): Final instruction for annotators
-            
-            Returns:
-                tuple: (status message, updated codebook JSON)
             """
             try:
                 if not name:
-                    return "Error: Attribute name is required", None
+                    return ("Error: Attribute name is required", None, 
+                        name, description, attr_type, instr_start, instr_end)
                     
                 # Load existing codebook
                 if not annotator.codebook_path.exists():
@@ -441,7 +476,8 @@ def create_ui():
                     
                 # Check if attribute already exists
                 if any(code['attribute'] == name for code in codebook['codes']):
-                    return f"Error: Attribute '{name}' already exists", None
+                    return (f"Error: Attribute '{name}' already exists", None,
+                        name, description, attr_type, instr_start, instr_end)
                     
                 # Create new attribute
                 new_attribute = {
@@ -450,7 +486,7 @@ def create_ui():
                     "type": attr_type,
                     "instruction_start": instr_start,
                     "instruction_end": instr_end,
-                    "categories": []  # Empty list for now, will be populated later
+                    "categories": []
                 }
                 
                 # Add to codebook
@@ -460,10 +496,55 @@ def create_ui():
                 with open(annotator.codebook_path, 'w') as f:
                     json.dump(codebook, f, indent=4)
                     
-                return f"Successfully added attribute: {name}", codebook
+                # Return success message and clear all inputs
+                return (f"Successfully added attribute: {name}", codebook,
+                        "", "", "categorical", "", "")
                 
             except Exception as e:
-                return f"Error adding attribute: {str(e)}", None
+                return (f"Error adding attribute: {str(e)}", None,
+                        name, description, attr_type, instr_start, instr_end)
+
+        def add_category_to_attribute(attribute_name, category, description):
+            """
+            Adds a new category to an existing attribute in the codebook
+            """
+            try:
+                if not all([attribute_name, category, description]):
+                    return ("Error: All fields are required", None, 
+                        attribute_name, category, description)
+                    
+                # Load existing codebook
+                with open(annotator.codebook_path, 'r') as f:
+                    codebook = json.load(f)
+                    
+                # Find the attribute
+                for code in codebook['codes']:
+                    if code['attribute'] == attribute_name:
+                        # Check if category already exists
+                        if any(cat['category'] == category for cat in code['categories']):
+                            return (f"Error: Category '{category}' already exists in attribute '{attribute_name}'", None,
+                                attribute_name, category, description)
+                        
+                        # Add new category
+                        code['categories'].append({
+                            "category": category,
+                            "description": description
+                        })
+                        
+                        # Save updated codebook
+                        with open(annotator.codebook_path, 'w') as f:
+                            json.dump(codebook, f, indent=4)
+                            
+                        # Return success and clear category/description fields but keep attribute selection
+                        return (f"Successfully added category '{category}' to attribute '{attribute_name}'", codebook,
+                            attribute_name, "", "")
+                        
+                return (f"Error: Attribute '{attribute_name}' not found", None,
+                    attribute_name, category, description)
+                
+            except Exception as e:
+                return (f"Error adding category: {str(e)}", None,
+                    attribute_name, category, description)
 
         # Add the click handler
         add_attribute_btn.click(
@@ -477,11 +558,44 @@ def create_ui():
             ],
             outputs=[
                 upload_status,
-                codes_display
+                codes_display,
+                attribute_name,          # Clear name
+                attribute_description,   # Clear description
+                attribute_type,         # Reset to default
+                instruction_start,      # Clear start instruction
+                instruction_end         # Clear end instruction
             ]
         )
 
-        ### Settings
+        add_category_btn.click(
+            fn=add_category_to_attribute,
+            inputs=[
+                attribute_select,
+                category_name,
+                category_description
+            ],
+            outputs=[
+                upload_status,
+                codes_display,
+                attribute_select,       # Keep selected attribute
+                category_name,         # Clear category name
+                category_description   # Clear category description
+            ]
+        )
+
+        reload_attributes_btn.click(
+            fn=update_attribute_choices,
+            outputs=[attribute_select]
+        )
+
+        # Update attribute choices when codebook changes
+        new_codebook_btn.click(fn=update_attribute_choices, outputs=[attribute_select])
+        codebook_upload.change(fn=update_attribute_choices, outputs=[attribute_select])
+        add_attribute_btn.click(fn=update_attribute_choices, outputs=[attribute_select])
+
+        ################################################
+        # Settings
+        ################################################
 
         def apply_llm_settings(url, api_key, model):
             from lm import update_llm_config

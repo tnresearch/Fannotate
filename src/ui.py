@@ -3,6 +3,7 @@ import pandas as pd
 import json
 from annotator import TranscriptionAnnotator
 from lm import batch_process_transcripts
+from gradio_rich_textbox import RichTextbox
 
 # annotation object
 annotator = TranscriptionAnnotator()
@@ -94,7 +95,7 @@ def create_ui():
                                             - ```google/Gemma-2-2B-it```
                                             - ```google/Gemma-2-9B-it```
                                             - ```google/Gemma-2-27B-it```
-                                        """)
+                                        """, container=True)
                 
                 
                     with gr.Column(scale=1):
@@ -111,7 +112,7 @@ def create_ui():
                                         - ```meta-llama/Llama-3.1-8B-Instruct```
                                         - ```meta-llama/Llama-3.1-70B-Instruct```
                                         - ```meta-llama/Llama-3.1-405B-Instruct```
-                                        """)
+                                        """, container=True)
                         
 
             # Simplified Codebook Tab
@@ -135,67 +136,72 @@ def create_ui():
                 # In ui.py, modify the codebook tab section
 
                 # New section for adding attributes
+
                 with gr.Row():
                     gr.Markdown("## Add New Attribute")
-                
-                with gr.Row():
-                    with gr.Column(scale=1):
-                        attribute_name = gr.Textbox(
-                            label="Attribute Name",
-                            placeholder="Enter the name of the attribute"
-                        )
-                        attribute_description = gr.TextArea(
-                            label="Attribute Description",
-                            placeholder="Describe what this attribute represents"
-                        )
-                    with gr.Column(scale=1):
-                        attribute_type = gr.Dropdown(
-                            label="Attribute Type",
-                            choices=["categorical", "freetext"],
-                            value="categorical"
-                        )
-                        instruction_start = gr.TextArea(
-                            label="Instruction Start",
-                            placeholder="Enter the initial instruction for annotators"
-                        )
-                        instruction_end = gr.TextArea(
-                            label="Instruction End",
-                            placeholder="Enter the final instruction for annotators"
-                        )
-                
-                with gr.Row():
-                    add_attribute_btn = gr.Button("Add Attribute", variant="primary")
+
+                with gr.Group():                    
+                    with gr.Row():
+                        with gr.Column(scale=1):
+                            attribute_name = gr.Textbox(
+                                label="Attribute Name",
+                                placeholder="Enter the name of the attribute"
+                            )
+                            attribute_description = gr.TextArea(
+                                label="Attribute Description",
+                                placeholder="Describe what this attribute represents"
+                            )
+                        with gr.Column(scale=1):
+                            attribute_type = gr.Radio(
+                                label="Attribute Type",
+                                choices=["categorical", "freetext"],
+                                value="categorical"
+                            )                            
+                    
+                    with gr.Row():
+                            instruction_start = gr.TextArea(
+                                label="Instruction Start",
+                                placeholder="Enter the initial instruction for annotators"
+                            )
+                            instruction_end = gr.TextArea(
+                                label="Instruction End",
+                                placeholder="Enter the final instruction for annotators"
+                            )
+                    with gr.Row():
+                        add_attribute_btn = gr.Button("Add Attribute", variant="primary")
 
                 with gr.Row():
                     gr.Markdown("## Add Category to Attribute")
 
-                with gr.Row():
-                    with gr.Column(scale=1):
-                        attribute_select = gr.Dropdown(
-                            label="Select Attribute",
-                            choices=[],
-                            interactive=True,
-                            allow_custom_value=False,
-                            #placeholder="Choose an attribute to add categories to"
-                        )
-                        reload_attributes_btn = gr.Button("🔄 Reload Attributes")
-                        category_name = gr.Textbox(
-                            label="Category Name",
-                            #placeholder="Enter the name of the category"
-                        )
-                        with gr.Row():
-                            category_icon = gr.Textbox(
-                                label="Category Icon (Emoji)",
-                                placeholder="Enter an emoji icon"
-                            )
-                    with gr.Column(scale=1):
-                        category_description = gr.TextArea(
-                            label="Category Description",
-                            #placeholder="Describe what this category represents"
-                        )
 
-                with gr.Row():
-                    add_category_btn = gr.Button("Add Category", variant="primary")
+                with gr.Group():      
+                    with gr.Row():
+                        with gr.Column(scale=1):
+                            attribute_select = gr.Dropdown(
+                                label="Select Attribute",
+                                choices=[],
+                                interactive=True,
+                                allow_custom_value=False,
+                                #placeholder="Choose an attribute to add categories to"
+                            )
+                            reload_attributes_btn = gr.Button("🔄 Reload Attributes")
+                            category_name = gr.Textbox(
+                                label="Category Name",
+                                #placeholder="Enter the name of the category"
+                            )
+                            with gr.Row():
+                                category_icon = gr.Textbox(
+                                    label="Category Icon (Emoji)",
+                                    placeholder="Enter an emoji icon"
+                                )
+                        with gr.Column(scale=1):
+                            category_description = gr.TextArea(
+                                label="Category Description",
+                                #placeholder="Describe what this category represents"
+                            )
+
+                    with gr.Row():
+                        add_category_btn = gr.Button("Add Category", variant="primary")
 
 
             ######## Auto fill ############
@@ -228,22 +234,6 @@ def create_ui():
                     )
                     progress_bar = gr.Textbox(label="Progress", interactive=False)
 
-            # Custom Tab
-            with gr.Tab("🤖 Custom-fill"):
-                with gr.Row():
-                    gr.Markdown("## Custom annotation")
-                with gr.Row():
-                    gr.Markdown("<span style='color: darkgrey'>Write a custom prompt to generate a new attribute to the text (summary, category, keywords, ...).</span>")
-                with gr.Row():
-                    custom_output_column = gr.Textbox(label="Output Column Name", placeholder="Enter name for the new column", interactive=True)
-                with gr.Row():
-                    custom_instruction = gr.TextArea(label="Instruction for LLM", placeholder="Enter instructions for the LLM to follow when auto-filling annotations...", interactive=True)
-                with gr.Row():
-                    custom_values = gr.TextArea(label="Valid labels", placeholder="Enter values", interactive=True)
-                with gr.Row():
-                    custom_process_btn = gr.Button("Process with Custom Instructions", variant="primary")
-                    custom_progress = gr.Textbox(label="Progress", interactive=False)
-
             # Annotation Editor Tab
             with gr.Tab("✏️ Review"):
                 with gr.Row():
@@ -253,24 +243,43 @@ def create_ui():
                 with gr.Row():
                     prev_btn = gr.Button("Previous")
                     next_btn = gr.Button("Next")
+                #with gr.Row():
+                    #current_index = RichTextbox(value=0, label="Current Index", show_label=False, interactive=False, visible=False)
+                    #reload_codebook_btn_2 = gr.Button("Reload Codebook")
+                    #current_index = gr.Number(value=0, label="Current Index", interactive=True)
+                    #current_index = gr.Number(value=0, label="Current Index", interactive=False)
+                    #review_status = gr.Textbox(label="Review Status", interactive=False)
+                    #annotation_status = gr.Textbox(label="Annotation Status", interactive=False)
                 with gr.Row():
-                    current_index = gr.Number(value=0, label="Current Index", interactive=False)
-                    review_status = gr.Textbox(label="Review Status", interactive=False)
-                    annotation_status = gr.Textbox(label="Annotation Status", interactive=False)
-                with gr.Row():
-                    code_select = gr.Dropdown(label="Select Category", choices=[], interactive=True, allow_custom_value=True)
-                    value_select = gr.Dropdown(label="Select Value", choices=[], interactive=True, allow_custom_value=True)
-                    reload_codebook_btn_2 = gr.Button("Reload Codebook")
-                    annotate_next_btn = gr.Button("Annotate and continue to next", variant="primary")
+                    with gr.Column():
+                        code_select = gr.Dropdown(label="(1) Select Category", choices=[], interactive=True)#, allow_custom_value=True)
+                        #value_select = gr.Dropdown(label="Select Value", choices=[], interactive=True, allow_custom_value=True)
+                        value_select = gr.Radio(label="(2) Select Value",choices=[],interactive=True)
+                    with gr.Column():
+                        reload_codebook_btn_2 = gr.Button("Reload Codebook", variant="secondary")#, size="sm")
+                        annotate_next_btn = gr.Button("Annotate and continue to next!", variant="primary", size="lg") 
+                #with gr.Row():
                 #transcript_box = gr.TextArea(label="Text Content", interactive=False)
-                with gr.Row(): 
-                    with gr.Column():
-                        autofill_summary = gr.TextArea(label="Auto-fill suggestions from LLM:", interactive=False)
-                    with gr.Column():
-                        customfill_summary = gr.TextArea(label="Custom-fill suggestions from LLM:", interactive=False)
-
                 with gr.Row():
-                    transcript_box = gr.TextArea(label="Text Content", interactive=False)
+                    with gr.Column():
+                        categorical_summary = RichTextbox(
+                            label="Categorical Auto-fill Annotations:", 
+                            interactive=False
+                        )
+                    with gr.Column():
+                        freetext_summary = RichTextbox(
+                            label="Free-text Auto-fill Annotations:", 
+                            interactive=False
+                        )
+                
+                with gr.Row():
+                    gr.Markdown("## Text content")
+                with gr.Row():
+                    current_index_display = gr.Markdown("**Current Index:** 0")
+                with gr.Row():
+                    #transcript_box = gr.TextArea(label="Text Content", interactive=False)
+                    transcript_box = RichTextbox(label="Text Content", interactive=False)
+                    #transcript_box = gr.Markdown(label="Text Content", container=True)
 
             # Stats Tab
             with gr.Tab("📊 Status"):
@@ -505,47 +514,6 @@ def create_ui():
                 return (f"Error adding attribute: {str(e)}", None,
                         name, description, attr_type, instr_start, instr_end)
 
-        # def add_category_to_attribute(attribute_name, category, description):
-        #     """
-        #     Adds a new category to an existing attribute in the codebook
-        #     """
-        #     try:
-        #         if not all([attribute_name, category, description]):
-        #             return ("Error: All fields are required", None, 
-        #                 attribute_name, category, description)
-                    
-        #         # Load existing codebook
-        #         with open(annotator.codebook_path, 'r') as f:
-        #             codebook = json.load(f)
-                    
-        #         # Find the attribute
-        #         for code in codebook['codes']:
-        #             if code['attribute'] == attribute_name:
-        #                 # Check if category already exists
-        #                 if any(cat['category'] == category for cat in code['categories']):
-        #                     return (f"Error: Category '{category}' already exists in attribute '{attribute_name}'", None,
-        #                         attribute_name, category, description)
-                        
-        #                 # Add new category
-        #                 code['categories'].append({
-        #                     "category": category,
-        #                     "description": description
-        #                 })
-                        
-        #                 # Save updated codebook
-        #                 with open(annotator.codebook_path, 'w') as f:
-        #                     json.dump(codebook, f, indent=4)
-                            
-        #                 # Return success and clear category/description fields but keep attribute selection
-        #                 return (f"Successfully added category '{category}' to attribute '{attribute_name}'", codebook,
-        #                     attribute_name, "", "")
-                        
-        #         return (f"Error: Attribute '{attribute_name}' not found", None,
-        #             attribute_name, category, description)
-                
-        #     except Exception as e:
-        #         return (f"Error adding category: {str(e)}", None,
-        #             attribute_name, category, description)
         def add_category_to_attribute(attribute_name, category, description, icon):
             """Adds a new category with an emoji icon to an existing attribute"""
             try:
@@ -670,23 +638,60 @@ def create_ui():
                 print(f"Error processing DataFrame: {e}")
                 return None
         
+        # def update_value_choices(code_name):
+        #     """
+        #     Purpose: Updates the value dropdown menu based on the selected category. Used in the Review tab when selecting annotation values.
+        #     Inputs: code_name - The currently selected category
+        #     Outputs: A Gradio Dropdown component with updated choices
+        #     """
+        #     if not code_name:
+        #         return gr.Dropdown(choices=[])
+        #     values = annotator.get_code_values(code_name)
+        #     return gr.Dropdown(choices=values, value=None, allow_custom_value=True)
+
         def update_value_choices(code_name):
-            """
-            Purpose: Updates the value dropdown menu based on the selected category. Used in the Review tab when selecting annotation values.
-            Inputs: code_name - The currently selected category
-            Outputs: A Gradio Dropdown component with updated choices
-            """
+            """Updates the radio button choices based on selected category"""
             if not code_name:
-                return gr.Dropdown(choices=[])
-            values = annotator.get_code_values(code_name)
-            return gr.Dropdown(choices=values, value=None, allow_custom_value=True)
+                return gr.Radio(choices=[])
+            
+            try:
+                # Load codebook to get category type
+                codebook = annotator.load_codebook()
+                selected_code = None
+                for code in codebook:
+                    if code['attribute'] == code_name:
+                        selected_code = code
+                        break
+                        
+                if selected_code:
+                    # Get values and their icons
+                    choices = []
+                    for category in selected_code['categories']:
+                        icon = category.get('icon', '')
+                        label = f"{icon} {category['category']}" if icon else category['category']
+                        choices.append(label)
+                    
+                    return gr.Radio(
+                        choices=choices,
+                        label="Select Value",
+                        value=None  # Reset selection when category changes
+                    )
+                return gr.Radio(choices=[])
+                
+            except Exception as e:
+                print(f"Error updating value choices: {e}")
+                return gr.Radio(choices=[])
         
         sheet_select.change(fn=lambda x: gr.Dropdown(choices=annotator.get_columns(x)), 
                             inputs=[sheet_select], 
                             outputs=[column_select])
         
-        code_select.change(fn=update_value_choices, 
-                           inputs=[code_select], outputs=[value_select])
+        code_select.change(fn=update_value_choices,inputs=[code_select], outputs=[value_select])
+        
+
+        ################################################
+        # Auto fill
+        ################################################
 
         def reload_llm_categories():
             """
@@ -802,32 +807,6 @@ def create_ui():
                             outputs=[progress_bar])
 
 
-        # def generate_prompt(code_name):
-        #     """
-        #     Purpose: Creates a structured prompt for the LLM based on the selected category from the codebook. Used in the Auto-fill tab when generating instructions for automated annotation.
-        #     Inputs: code_name - The category name selected from the codebook
-        #     Outputs: A formatted prompt string containing the category details, or an error message if generation fails
-        #     """
-        #     if not code_name:
-        #         return "Please select a category first"
-        #     try:
-        #         codebook = annotator.load_codebook()
-        #         selected_code = None
-        #         clean_name = clean_column_name(code_name)
-        #         for code in codebook:
-        #             if clean_column_name(code['attribute']) == clean_name:
-        #                 selected_code = code
-        #                 break
-        #         if not selected_code:
-        #             return f"Selected category '{code_name}' not found in codebook"
-        #         prompt = "Please classify the text within one of the following categories:\n\n"
-        #         prompt += json.dumps(selected_code, indent=2)
-        #         prompt += "\n\nText: "
-        #         return prompt
-        #     except Exception as e:
-        #         print(f"Error generating prompt: {e}")
-        #         return f"Error generating prompt: {str(e)}"
-
         def create_prompt_from_json(json_data):
             """
             Converts a JSON codebook entry into a formatted prompt string and appends text if provided.
@@ -842,7 +821,7 @@ def create_ui():
             try:
                 # Start with the instruction header
                 prompt = json_data.get('instruction_start', '')
-                prompt += "\n\n"
+                #prompt += "\n\n"
                 
                 # Add each category and its description
                 for category in json_data.get('categories', []):
@@ -917,7 +896,7 @@ def create_ui():
                 categories = [code["attribute"] for code in annotator.load_codebook()]
                 return (
                     gr.Dropdown(choices=categories, value=None, allow_custom_value=True),
-                    gr.Dropdown(choices=[], value=None, allow_custom_value=True)
+                    gr.Dropdown(choices=[], value=None)#, allow_custom_value=True)
                 )
             except Exception as e:
                 print(f"Error refreshing dropdowns: {e}")
@@ -926,179 +905,183 @@ def create_ui():
         reload_codebook_btn_2.click(fn=refresh_annotation_dropdowns, 
                                     outputs=[code_select, value_select])
         
-
-        # Custom tab
-        def custom_batch_process(instruction, values, output_column):
-            """
-            Purpose: Processes all texts using custom LLM instructions. Used in the Custom tab for flexible batch processing with user-defined instructions and output categories.
-            Inputs: instruction - Custom LLM prompt, values - Allowed output values, output_column - Name for the new column
-            Outputs: Status message indicating success or failure of the batch process
-            """
-            if not output_column:
-                return "Please specify an output column name"
-            # specific column name for custom annotations
-            output_column = "custom_"+output_column
-            try:
-                df, status = batch_process_transcripts(
-                    annotator.df,
-                    instruction,
-                    annotator.selected_column,
-                    output_column,
-                    values)
-                if df is not None:
-                    annotator.df = df
-                    # back up
-                    annotator.backup_df()
-                return status
-            except Exception as e:
-                return f"Error: {str(e)}"
-            
-        custom_process_btn.click(fn=custom_batch_process, 
-                                 inputs=[custom_instruction, custom_values, custom_output_column], 
-                                 outputs=[custom_progress])
         
-        ### Annotation tab
+        
+        ################################################
+        # Review tab
+        ################################################
 
-        # def get_autofill_summary(index):
-        #     """Get concatenated values from all autofill columns for the current index"""
-        #     try:
-        #         if annotator.df is None or index >= len(annotator.df):
-        #             return ""
-                    
-        #         # Get all columns that start with 'autofill_'
-        #         autofill_cols = [col for col in annotator.df.columns if col.startswith('autofill_')]
-                
-        #         if not autofill_cols:
-        #             return "No auto-fill annotations found"
-                    
-        #         # Build summary string
-        #         summary = []
-        #         for col in autofill_cols:
-        #             value = annotator.df.at[index, col]
-        #             # Clean column name by removing 'autofill_' prefix
-        #             clean_col = col.replace('autofill_', '')
-        #             summary.append(f"{clean_col}: {value}")
-                    
-        #         return "\n".join(summary)
-                
-        #     except Exception as e:
-        #         return f"Error getting auto-fill summary: {str(e)}"
             
         def get_autofill_summary(index):
-            """Get concatenated values from all autofill columns with emoji icons"""
+            """Get separate summaries for categorical and free-text annotations"""
             try:
                 if annotator.df is None or index >= len(annotator.df):
-                    return ""
+                    return "", ""
                     
                 with open(annotator.codebook_path, 'r') as f:
                     codebook = json.load(f)
                     
-                summary = []
+                categorical_summary = []
+                freetext_summary = []
+                
                 for column in annotator.df.columns:
                     if column.startswith('autofill_'):
                         value = annotator.df.iloc[index][column]
                         if pd.notna(value):
-                            # Get clean column name by removing 'autofill_' prefix
                             clean_col = column.replace('autofill_', '')
-                            # Find the corresponding icon
-                            attribute = column.replace('autofill_', '')
-                            for code in codebook['codes']:
-                                if code['attribute'] == attribute:
-                                    for cat in code['categories']:
-                                        if cat['category'] == value:
-                                            icon = cat.get('icon', '')
-                                            summary.append(f"{clean_col}: {icon} {value}")
-                                            break
-                                    break
                             
-                return "\n".join(summary)
+                            # Find attribute type from codebook
+                            for code in codebook['codes']:
+                                if code['attribute'] == clean_col:
+                                    if code['type'] == 'categorical':
+                                        for cat in code['categories']:
+                                            if cat['category'] == value:
+                                                icon = cat.get('icon', '')
+                                                categorical_summary.append(f"[b][u]{clean_col}[/u][/b]: {icon} {value}<br>")
+                                                break
+                                    else:
+                                        # Format free-text with BBCode for bold and underline
+                                        freetext_summary.append(f"[b][u]{clean_col}[/u][/b]: {value}<br><br>")
+                                    break
+                                    
+                return (
+                    "\n".join(categorical_summary) if categorical_summary else "No categorical annotations",
+                    "\n".join(freetext_summary) if freetext_summary else "No free-text annotations"
+                )
                 
             except Exception as e:
                 print(f"Error getting autofill summary: {e}")
-                return ""
-        
+                return "Error loading categorical annotations", "Error loading free-text annotations"
+                
 
-        def get_customfill_summary(index):
-            """Get concatenated values from all autofill columns for the current index"""
-            try:
-                if annotator.df is None or index >= len(annotator.df):
-                    return ""
-                    
-                # Get all columns that start with 'autofill_'
-                autofill_cols = [col for col in annotator.df.columns if col.startswith('custom_')]
-                
-                if not autofill_cols:
-                    return "No custom-fill annotations found"
-                    
-                # Build summary string
-                summary = []
-                for col in autofill_cols:
-                    value = annotator.df.at[index, col]
-                    # Clean column name by removing 'autofill_' prefix
-                    clean_col = col.replace('custom_', '')
-                    summary.append(f"{clean_col}: {value}")
-                    
-                return "\n".join(summary)
-                
-            except Exception as e:
-                return f"Error getting custom-fill summary: {str(e)}"
-        
-
-        def annotate_and_next(code_name, value):
-            """
-            Purpose: Saves the current annotation and automatically moves to the next text entry. Used in the Review tab when annotating texts sequentially.
-            Inputs: code_name - The category being annotated, value - The selected value for the annotation
-            Outputs: Status message, next text content, current index, and review status indicator (✅/❌)
-            """
-            try:
-                if not code_name or not value:
-                    return "Please select both category and value", None, None, None, ""
-                    
-                status, df = annotator.save_annotation(code_name, value)
-                if not status.startswith("Saved"):
-                    return status, None, None, None, ""
-                    
-                text, idx = annotator.navigate_transcripts("next")
-                review_status_text = "✅" if annotator.df.iloc[idx]['is_reviewed'] else "❌"
-                autofill_summary = get_autofill_summary(idx)
-                customfill_summary = get_customfill_summary(idx)
-                
-                return status, text, idx, review_status_text, autofill_summary, customfill_summary
-                
-            except Exception as e:
-                print(f"Error in annotate_and_next: {e}")
-                return "Error during annotation", None, None, "❌", ""
+        # def navigate_transcripts(direction):
+        #     """Navigate between transcripts and update all fields"""
+        #     if annotator.df is None or annotator.selected_column is None:
+        #         return None, None, "", "", ""
             
-        annotate_next_btn.click(fn=annotate_and_next, 
-                                inputs=[code_select, value_select], 
-                                outputs=[annotation_status, transcript_box, current_index, review_status, autofill_summary, customfill_summary])
-
-        def navigate_and_update(direction):
-            """
-            Purpose: Handles navigation between text entries in the review interface. Used for moving between texts during manual review.
-            Inputs: direction - Either "prev" or "next" to indicate navigation direction
-            Outputs: Text content, current index, and review status indicator (✅/❌)
-            """
-            try:
-                text, idx = annotator.navigate_transcripts(direction)
-                if text is None or idx is None:
-                    return None, None, "❌", ""
+        #     try:
+        #         if direction == "next":
+        #             annotator.current_index = min(annotator.current_index + 1, len(annotator.df) - 1)
+        #         else:
+        #             annotator.current_index = max(annotator.current_index - 1, 0)
                     
-                review_status_text = "✅" if annotator.df.iloc[idx]['is_reviewed'] else "❌"
-                autofill_summary = get_autofill_summary(idx)
-                customfill_summary = get_customfill_summary(idx)
+        #         text = annotator.df.iloc[annotator.current_index]['text']
+        #         categorical, freetext = get_autofill_summary(annotator.current_index)
                 
-                return text, idx, review_status_text, autofill_summary, customfill_summary
+        #         return text, annotator.current_index, categorical, freetext
+                
+        #     except Exception as e:
+        #         print(f"Error navigating transcripts: {e}")
+        #         return None, None, "", ""
+
+        def navigate_transcripts(direction):
+            if annotator.df is None or annotator.selected_column is None:
+                return None, "**Current Index:** 0", "", ""
+            
+            try:
+                if direction == "next":
+                    annotator.current_index = min(annotator.current_index + 1, len(annotator.df) - 1)
+                else:
+                    annotator.current_index = max(annotator.current_index - 1, 0)
+                    
+                text = annotator.df.iloc[annotator.current_index]['text']
+                index_display = f"**Current Index:** {annotator.current_index}"
+                categorical, freetext = get_autofill_summary(annotator.current_index)
+                
+                return text, index_display, categorical, freetext
                 
             except Exception as e:
-                print(f"Error in navigate_and_update: {e}")
-                return None, None, "❌", ""
+                print(f"Error navigating transcripts: {e}")
+                return None, "**Current Index:** 0", "", ""
 
-        prev_btn.click(fn=lambda: navigate_and_update("prev"), 
-                       outputs=[transcript_box, current_index, review_status, autofill_summary, customfill_summary])
+        # def annotate_and_next(code_name, value):
+        #     """
+        #     Purpose: Saves the current annotation and automatically moves to the next text entry. Used in the Review tab when annotating texts sequentially.
+        #     Inputs: code_name - The category being annotated, value - The selected value for the annotation
+        #     Outputs: Status message, next text content, current index, and review status indicator (✅/❌)
+        #     """
+        #     try:
+        #         if not code_name or not value:
+        #             return "Please select both category and value", None, None, None, ""
+                    
+        #         status, df = annotator.save_annotation(code_name, value)
+        #         if not status.startswith("Saved"):
+        #             return status, None, None, None, ""
+                    
+        #         text, idx = annotator.navigate_transcripts("next")
+        #         review_status_text = "✅" if annotator.df.iloc[idx]['is_reviewed'] else "❌"
+        #         autofill_summary = get_autofill_summary(idx) 
+                
+        #         return status, text, idx, review_status_text, autofill_summary 
+                
+        #     except Exception as e:
+        #         print(f"Error in annotate_and_next: {e}")
+        #         return "Error during annotation", None, None, "❌", ""
+            
+        # annotate_next_btn.click(fn=annotate_and_next, 
+        #                         inputs=[code_select, value_select], 
+        #                         outputs=[annotation_status, transcript_box, current_index, review_status, autofill_summary ])
 
-        next_btn.click(fn=lambda: navigate_and_update("next"), 
-                       outputs=[transcript_box, current_index, review_status, autofill_summary, customfill_summary])
+        # def navigate_and_update(direction):
+        #     """
+        #     Purpose: Handles navigation between text entries in the review interface. Used for moving between texts during manual review.
+        #     Inputs: direction - Either "prev" or "next" to indicate navigation direction
+        #     Outputs: Text content, current index, and review status indicator (✅/❌)
+        #     """
+        #     try:
+        #         text, idx = annotator.navigate_transcripts(direction)
+        #         if text is None or idx is None:
+        #             return None, None, "❌", ""
+                    
+        #         review_status_text = "✅" if annotator.df.iloc[idx]['is_reviewed'] else "❌"
+        #         autofill_summary = get_autofill_summary(idx) 
+                
+        #         return text, idx, review_status_text, autofill_summary 
+                
+        #     except Exception as e:
+        #         print(f"Error in navigate_and_update: {e}")
+        #         return None, None, "❌", ""
+
+        # prev_btn.click(fn=lambda: navigate_and_update("prev"), 
+        #                outputs=[transcript_box, current_index, review_status, autofill_summary])
+
+        # next_btn.click(fn=lambda: navigate_and_update("next"), 
+        #                outputs=[transcript_box, current_index, review_status, autofill_summary])
+        
+        def annotate_and_next(code_name, value):
+            """Handles annotation with radio button values"""
+            if not code_name or not value:
+                return "Please select both category and value", None
+                
+            try:
+                # Clean the value by removing emoji if present
+                clean_value = value.split()[-1] if value else None
+                
+                status, df = annotator.save_annotation(code_name, clean_value)
+                return status, df
+                
+            except Exception as e:
+                return f"Error saving annotation: {str(e)}", None
+        
+        # prev_btn.click(
+        #         fn=lambda: navigate_transcripts("prev"),
+        #         outputs=[transcript_box, current_index, categorical_summary, freetext_summary]
+        #     )
+
+        # next_btn.click(
+        #         fn=lambda: navigate_transcripts("next"),
+        #         outputs=[transcript_box, current_index, categorical_summary, freetext_summary]
+        #     )
+
+        prev_btn.click(
+            fn=lambda: navigate_transcripts("prev"),
+            outputs=[transcript_box, current_index_display, categorical_summary, freetext_summary]
+        )
+
+        next_btn.click(
+            fn=lambda: navigate_transcripts("next"),
+            outputs=[transcript_box, current_index_display, categorical_summary, freetext_summary]
+        )
         
         ### Download tab
 

@@ -80,14 +80,14 @@ def create_ui():
                                 """)
                 with gr.Row():
                     gr.Markdown("""### Model Name:
-                                        It is highly suggested to use *permissively licensed* LLMs that allow distillation/creation of training data for training of competing models (No OpenAI models can be used legally for this, due to <a href="https://openai.com/policies/row-terms-of-use/">OpenAI TOS</a>). """)
+                                        It is highly suggested to use *permissively licensed* LLMs that allow distillation/creation of training data for training of competing models (No OpenAI models can be used legally for this, due to <a href="https://openai.com/policies/row-terms-of-use/">OpenAI TOS</a>. """)
                 with gr.Row():
                     with gr.Column(scale=1):
                         with gr.Row():
                             gr.Markdown("""### Gemma Apache 2.0 License:
 
                                         Requires you to include a copy of the license, document any changes made, retain all copyright, patent and attribution notices. 
-                                        Full license: https://github.com/google-deepmind/gemma/blob/main/LICENSE""")
+                                        Full license: https://github.com/google-deepmind/gemma/blob/main/LICENSE""", container=True)
                                         
                         
                         with gr.Row():
@@ -104,7 +104,7 @@ def create_ui():
                                         ### Meta Llama 3 Community License:
 
                                         Requires you to acknowledge "Built with Meta Llama 3"" in the documentation, and name any derivative model as 'llama-3*', and obtain additional licensing if services exceed 700 million monthly users. 
-                                        Full license: https://www.llama.com/llama3/license/""")
+                                        Full license: https://www.llama.com/llama3/license/""", container=True)
                                         
                         
                         with gr.Row():
@@ -119,6 +119,8 @@ def create_ui():
             with gr.Tab("📓 Codebook"):
                 with gr.Row():
                     gr.Markdown("## Annotation codebook")
+                
+                #with gr.Group():  
                 with gr.Row():
                     gr.Markdown("Upload existing codebook or initialize a new one.")
                 with gr.Row():
@@ -168,7 +170,7 @@ def create_ui():
                                 placeholder="Enter the final instruction for annotators"
                             )
                     with gr.Row():
-                        add_attribute_btn = gr.Button("Add Attribute", variant="primary")
+                        add_attribute_btn = gr.Button("Add Attribute", variant="secondary")#, variant="primary")
 
                 with gr.Row():
                     gr.Markdown("## Add Category to Attribute")
@@ -201,7 +203,7 @@ def create_ui():
                             )
 
                     with gr.Row():
-                        add_category_btn = gr.Button("Add Category", variant="primary")
+                        add_category_btn = gr.Button("Add Category", variant="secondary")#, variant="primary")
 
 
             ######## Auto fill ############
@@ -249,7 +251,7 @@ def create_ui():
                     #current_index = gr.Number(value=0, label="Current Index", interactive=True)
                     #current_index = gr.Number(value=0, label="Current Index", interactive=False)
                     #review_status = gr.Textbox(label="Review Status", interactive=False)
-                    #annotation_status = gr.Textbox(label="Annotation Status", interactive=False)
+                    annotation_status = gr.Textbox(label="Annotation Status", interactive=False)
                 with gr.Row():
                     with gr.Column():
                         code_select = gr.Dropdown(label="(1) Select Category", choices=[], interactive=True)#, allow_custom_value=True)
@@ -993,6 +995,86 @@ def create_ui():
             except Exception as e:
                 print(f"Error navigating transcripts: {e}")
                 return None, "**Current Index:** 0", "", ""
+            
+
+        def save_and_next(code_name, value):
+            """Save annotation and move to next transcript"""
+            if not code_name or not value:
+                return (
+                    "Please select both category and value", 
+                    None, 
+                    "**Current Index:** 0",
+                    None, 
+                    None,
+                    None,
+                    None
+                )
+            
+            try:
+                # Get the actual category value from the codebook
+                codebook = annotator.load_codebook()
+                for code in codebook:
+                    if code['attribute'] == code_name:
+                        for category in code['categories']:
+                            icon = category.get('icon', '')
+                            full_category = f"{icon} {category['category']}" if icon else category['category']
+                            if full_category == value:
+                                # Create user annotation column if it doesn't exist
+                                user_column = f"user_{code_name}"
+                                if user_column not in annotator.df.columns:
+                                    annotator.df[user_column] = None
+                                
+                                # Save the actual category value without the icon
+                                annotator.df.at[annotator.current_index, user_column] = category['category']
+                                break
+                
+                annotator.df.at[annotator.current_index, 'is_reviewed'] = True
+                
+                # Backup the dataframe
+                annotator.backup_df()
+                
+                # Move to next transcript
+                next_text, next_index = annotator.navigate_transcripts("next")
+                
+                # Get updated summaries
+                cat_summary, free_summary = get_autofill_summary(next_index)
+                
+                return (
+                    f"Saved {value} for {code_name} at index {annotator.current_index}", 
+                    next_text,
+                    f"**Current Index:** {next_index}",
+                    cat_summary,
+                    free_summary,
+                    annotator.df,
+                    f"Saved {value} for {code_name} at index {annotator.current_index}"  # Status message for annotation_status
+                )
+                
+            except Exception as e:
+                error_msg = f"Error saving annotation: {str(e)}"
+                return (
+                    error_msg, 
+                    None, 
+                    "**Current Index:** 0",
+                    None, 
+                    None, 
+                    None,
+                    error_msg  # Error message for annotation_status
+                )
+
+        # Update the annotate_next_btn click handler
+        annotate_next_btn.click(
+            fn=save_and_next,
+            inputs=[code_select, value_select],
+            outputs=[
+                gr.Textbox(visible=False),  # Hidden status
+                transcript_box,
+                current_index_display,
+                categorical_summary,
+                freetext_summary,
+                preview_df,
+                annotation_status  # Add annotation_status to outputs
+            ]
+        )
 
         # def annotate_and_next(code_name, value):
         #     """

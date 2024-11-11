@@ -11,7 +11,7 @@ class TranscriptionAnnotator:
         self.excel_file = None
         self.current_index = 0
         self.selected_column = None
-        self.upload_dir = Path("uploads")
+        self.upload_dir = Path("uploads/")
         self.upload_dir.mkdir(exist_ok=True)
         self.codebook_path = self.upload_dir / "codebook.json"
         self.backup_path = self.upload_dir / "temp_annotations.xlsx"

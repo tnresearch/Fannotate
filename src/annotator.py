@@ -133,22 +133,52 @@ class TranscriptionAnnotator:
             print(f"Error getting code values: {e}")
             return []
 
+    # def save_annotation(self, code_name, value):
+    #     if self.df is None:
+    #         return "Please load data first", None
+    #     if not code_name or not value:
+    #         return "Please select both category and value", None
+    #     try:
+    #         with open(self.codebook_path, 'r') as f:
+    #             codebook = json.load(f)
+    #             code_exists = any(code['attribute'] == code_name for code in codebook['codes'])
+    #         if not code_exists:
+    #             return f"Code {code_name} not found in codebook", None
+            
+    #         self.df.at[self.current_index, code_name] = value
+    #         self.df.at[self.current_index, 'is_reviewed'] = True
+    #         self.backup_df()
+    #         return f"Saved {value} for {code_name} at index {self.current_index}", self.df
+    #     except Exception as e:
+    #         return f"Error saving annotation: {str(e)}", None
+
     def save_annotation(self, code_name, value):
         if self.df is None:
             return "Please load data first", None
         if not code_name or not value:
             return "Please select both category and value", None
+        
         try:
             with open(self.codebook_path, 'r') as f:
                 codebook = json.load(f)
-                code_exists = any(code['attribute'] == code_name for code in codebook['codes'])
+            
+            code_exists = any(code['attribute'] == code_name for code in codebook['codes'])
             if not code_exists:
                 return f"Code {code_name} not found in codebook", None
             
-            self.df.at[self.current_index, code_name] = value
+            # Clean the value by removing emoji if present
+            value = value.split(" ")[-1] if " " in value else value
+            
+            # Create column name for user annotation
+            column_name = f"user_{code_name}"
+            self.df[column_name] = self.df[column_name] if column_name in self.df.columns else None
+            
+            self.df.at[self.current_index, column_name] = value
             self.df.at[self.current_index, 'is_reviewed'] = True
+            
             self.backup_df()
             return f"Saved {value} for {code_name} at index {self.current_index}", self.df
+        
         except Exception as e:
             return f"Error saving annotation: {str(e)}", None
 

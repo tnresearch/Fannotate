@@ -4,6 +4,7 @@ import json
 from annotator import TranscriptionAnnotator
 from lm import batch_process_transcripts
 from gradio_rich_textbox import RichTextbox
+from sklearn.metrics import accuracy_score, f1_score
 
 # annotation object
 annotator = TranscriptionAnnotator()
@@ -57,13 +58,20 @@ def create_ui():
                                             value="token-abc123")
                     llm_model = gr.Textbox(label="Model Name", 
                                         value="google/gemma-2-2b-it")
+                    llm_framework = gr.Dropdown(
+                                        label="LLM Framework",
+                                        choices=["vLLM", "OpenAI"],
+                                        value="vLLM",
+                                        interactive=True
+                                    )
                 
                 with gr.Row():
                     apply_llm_settings_btn = gr.Button("Apply LLM Settings", variant="primary")
                     settings_status = gr.Textbox(label="Settings Status", interactive=False)
                 
 
-                # with gr.Row():
+                with gr.Row():
+                    gr.Markdown("<br><br>")
                 #     gr.Markdown("Fannotate relies on a OpenAI-like API endpoint. It is recommended to serve the LLM with vLLM which supports all the functionality in Fannotate.")
 
                 with gr.Row():
@@ -76,6 +84,7 @@ def create_ui():
                     gr.Markdown("""
                                     - Frigg is found at: http://172.16.16.48:8000/v1/
                                     - ITX is found at: http://192.168.50.155:8000/v1/
+                                    - OpenAI is found at: https://api.openai.com/v1/
                                 <br>
                                 """)
                 with gr.Row():
@@ -140,7 +149,7 @@ def create_ui():
                 # New section for adding attributes
 
                 with gr.Row():
-                    gr.Markdown("## Add New Attribute")
+                    gr.Markdown("## (1) Add New Attribute")
 
                 with gr.Group():                    
                     with gr.Row():
@@ -173,7 +182,7 @@ def create_ui():
                         add_attribute_btn = gr.Button("Add Attribute", variant="secondary")#, variant="primary")
 
                 with gr.Row():
-                    gr.Markdown("## Add Category to Attribute")
+                    gr.Markdown("## (2) Add Category to Attribute")
 
 
                 with gr.Group():      
@@ -251,7 +260,6 @@ def create_ui():
                     #current_index = gr.Number(value=0, label="Current Index", interactive=True)
                     #current_index = gr.Number(value=0, label="Current Index", interactive=False)
                     #review_status = gr.Textbox(label="Review Status", interactive=False)
-                    annotation_status = gr.Textbox(label="Annotation Status", interactive=False)
                 with gr.Row():
                     with gr.Column():
                         code_select = gr.Dropdown(label="(1) Select Category", choices=[], interactive=True)#, allow_custom_value=True)
@@ -262,6 +270,8 @@ def create_ui():
                         annotate_next_btn = gr.Button("Annotate and continue to next!", variant="primary", size="lg") 
                 #with gr.Row():
                 #transcript_box = gr.TextArea(label="Text Content", interactive=False)
+                with gr.Row():
+                    gr.Markdown("## LLM suggestions")
                 with gr.Row():
                     with gr.Column():
                         categorical_summary = RichTextbox(
@@ -275,6 +285,9 @@ def create_ui():
                         )
                 
                 with gr.Row():
+                    annotation_status = gr.Textbox(label="Annotation Status", interactive=False)
+
+                with gr.Row():
                     gr.Markdown("## Text content")
                 with gr.Row():
                     current_index_display = gr.Markdown("**Current Index:** 0")
@@ -285,7 +298,32 @@ def create_ui():
 
             # Stats Tab
             with gr.Tab("📊 Status"):
-                gr.Markdown("Status information will be displayed here")
+                with gr.Row():
+                    gr.Markdown("## Annotation Progress")
+                
+                with gr.Row():
+                    review_progress = gr.Markdown("Loading progress...")
+                
+                with gr.Row():
+                    gr.Markdown("## Agreement Analysis")
+                
+                with gr.Row():
+                    with gr.Column():
+                        category_select = gr.Dropdown(
+                            label="Select Category to Analyze",
+                            choices=[],
+                            interactive=True
+                        )
+                    with gr.Column():
+                        refresh_codebook_btn_3 = gr.Button("🔄 Refresh Categories", variant="secondary")
+                        refresh_stats_btn = gr.Button("Refresh Statistics", variant="primary")
+                
+                with gr.Row():
+                    metrics_display = RichTextbox(
+                        label="Classification Metrics",
+                        interactive=False
+                    )
+
 
             # Download Tab
             with gr.Tab("💾 Download", id="download_tab") as download_tab:
@@ -601,14 +639,14 @@ def create_ui():
         # Settings
         ################################################
 
-        def apply_llm_settings(url, api_key, model):
+        def apply_llm_settings(framework, url, api_key, model):
             from lm import update_llm_config
-            update_llm_config(url, api_key, model)
-            return f"LLM settings applied successfully. Endpoint: {url}, Model: {model}"
-
+            update_llm_config(framework, url, api_key, model)
+            return f"LLM settings applied successfully. Framework: {framework}, Endpoint: {url}, Model: {model}"
+        
         apply_llm_settings_btn.click(
             fn=apply_llm_settings,
-            inputs=[llm_url, llm_api_key, llm_model],
+            inputs=[llm_framework, llm_url, llm_api_key, llm_model],
             outputs=[settings_status]
         )
 
@@ -1164,8 +1202,115 @@ def create_ui():
             fn=lambda: navigate_transcripts("next"),
             outputs=[transcript_box, current_index_display, categorical_summary, freetext_summary]
         )
-        
-        ### Download tab
+
+
+        ##########################
+        # Status tab
+        ##########################
+        def get_review_progress():
+            """Calculate and display review progress"""
+            try:
+                if annotator.df is None:
+                    return "No data loaded"
+                
+                total_rows = len(annotator.df)
+                reviewed = annotator.df['is_reviewed'].sum()
+                progress_pct = (reviewed / total_rows) * 100
+                
+                if reviewed == total_rows:
+                    status_emoji = "🏆"
+                    status_msg = "All rows reviewed!"
+                else:
+                    status_emoji = "👎"
+                    status_msg = f"Progress: {reviewed}/{total_rows} rows reviewed"
+                
+                return f"## {status_emoji} {status_msg} ({progress_pct:.1f}%)"
+            except Exception as e:
+                return f"Error calculating progress: {str(e)}"
+
+        def calculate_metrics(category):
+            """Calculate classification metrics for selected category"""
+            try:
+                if annotator.df is None:
+                    return "[b][u]Error[/u][/b]: No data loaded"
+                    
+                # Check if both user and autofill columns exist
+                user_col = f"user_{category}"
+                auto_col = f"autofill_{category}"
+                
+                if user_col not in annotator.df.columns or auto_col not in annotator.df.columns:
+                    return "[b][u]Error[/u][/b]: Category not fully annotated by both user and LLM"
+                
+                # Get non-null values where both annotations exist
+                mask = annotator.df[user_col].notna() & annotator.df[auto_col].notna()
+                if not mask.any():
+                    return "[b][u]Error[/u][/b]: No complete annotations found"
+                    
+                y_true = annotator.df[user_col][mask]
+                y_pred = annotator.df[auto_col][mask]
+                
+                # Calculate metrics
+                metrics = [
+                    f"[b][u]Accuracy[/u][/b]: {accuracy_score(y_true, y_pred):.3f}",
+                    f"[b][u]Macro F1[/u][/b]: {f1_score(y_true, y_pred, average='macro'):.3f}",
+                    f"[b][u]Weighted F1[/u][/b]: {f1_score(y_true, y_pred, average='weighted'):.3f}",
+                    f"[b][u]Samples Compared[/u][/b]: {len(y_true)}",
+                    f"[b][u]Agreement Rate[/u][/b]: {(y_true == y_pred).mean():.3f}"
+                ]
+                
+                return "<br><br>".join(metrics)
+                
+            except Exception as e:
+                return f"[b][u]Error[/u][/b]: {str(e)}"
+
+        def update_category_choices():
+            """Update the category dropdown with available categories"""
+            try:
+                categories = [code["attribute"] for code in annotator.load_codebook()]
+                return gr.Dropdown(choices=categories)
+            except Exception as e:
+                return gr.Dropdown(choices=[])
+
+        # Add the event handlers
+        refresh_stats_btn.click(
+            fn=calculate_metrics,
+            inputs=[category_select],
+            outputs=[metrics_display]
+        )
+
+
+        def refresh_status_categories():
+            """Updates the category dropdown in the Status tab"""
+            try:
+                categories = [code["attribute"] for code in annotator.load_codebook()]
+                return gr.Dropdown(choices=categories)
+            except Exception as e:
+                print(f"Error refreshing status categories: {e}")
+                return gr.Dropdown(choices=[])
+
+        # Add the click handler
+        refresh_codebook_btn_3.click(
+            fn=refresh_status_categories,
+            outputs=[category_select]
+        )
+
+        # Update progress when tab is selected
+        demo.load(
+            fn=get_review_progress,
+            outputs=[review_progress]
+        )
+
+        # Update category choices when codebook changes
+        demo.load(
+            fn=update_category_choices,
+            outputs=[category_select]
+        )
+
+
+
+        ##########################
+        # Download tab
+        ##########################
 
         download_btn.click(fn=annotator.save_excel, 
                            outputs=[download_output, download_status])

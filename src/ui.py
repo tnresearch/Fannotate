@@ -253,41 +253,75 @@ def create_ui():
             # Review Tab
             ###################################
             with gr.Tab("✏️ Review"):
+                # Keep original code_select for compatibility
+                code_select = gr.Dropdown(label="Category", choices=[], visible=False, interactive=True)
+                value_select = gr.Radio(label="Value", choices=[], visible=False, interactive=True)
                 with gr.Row():
                     gr.Markdown("## Annotation review")
+                
                 with gr.Row():
-                    gr.Markdown("<span style='color: darkgrey'>Manual review of the annotated data.</span>")
+                    gr.Markdown("Manual review of the annotated data.")
+                
                 with gr.Row():
                     prev_btn = gr.Button("Previous")
                     next_btn = gr.Button("Next")
+                
                 with gr.Row():
-                    with gr.Column():
-                        code_select = gr.Dropdown(label="(1) Select Category", choices=[], interactive=True)
-                        value_select = gr.Radio(label="(2) Select Value",choices=[],interactive=True)
-                    with gr.Column():
-                        reload_codebook_btn_2 = gr.Button("Reload Codebook", variant="secondary")
-                        annotate_next_btn = gr.Button("Annotate and continue to next!", variant="primary", size="lg") 
+                    num_categories = gr.Dropdown(
+                        label="Number of Categories to Annotate",
+                        choices=["1", "2", "3", "4"],
+                        value="1",
+                        interactive=True
+                    )
+                
+                # Dynamic category columns container
+                category_columns = gr.Row(visible=True)
+                
+                with category_columns:
+                    with gr.Column(visible=True) as col1:
+                        code_select1 = gr.Dropdown(label="(1) Select Category", choices=[], interactive=True)
+                        value_select1 = gr.Radio(label="(2) Select Value", choices=[], interactive=True)
+                    
+                    with gr.Column(visible=False) as col2:
+                        code_select2 = gr.Dropdown(label="(1) Select Category", choices=[], interactive=True)
+                        value_select2 = gr.Radio(label="(2) Select Value", choices=[], interactive=True)
+                    
+                    with gr.Column(visible=False) as col3:
+                        code_select3 = gr.Dropdown(label="(1) Select Category", choices=[], interactive=True)
+                        value_select3 = gr.Radio(label="(2) Select Value", choices=[], interactive=True)
+                    
+                    with gr.Column(visible=False) as col4:
+                        code_select4 = gr.Dropdown(label="(1) Select Category", choices=[], interactive=True)
+                        value_select4 = gr.Radio(label="(2) Select Value", choices=[], interactive=True)
+                
+                with gr.Row():
+                    annotate_next_btn = gr.Button("Annotate and continue to next!", variant="primary", size="lg")
+                    reload_codebook_btn = gr.Button("🔄 Reload Categories", variant="secondary")
+                
                 with gr.Row():
                     gr.Markdown("## LLM suggestions")
+                
                 with gr.Row():
                     with gr.Column():
                         categorical_summary = RichTextbox(
-                            label="Categorical Auto-fill Annotations:", 
+                            label="Categorical Auto-fill Annotations:",
                             interactive=False
                         )
                     with gr.Column():
                         freetext_summary = RichTextbox(
-                            label="Free-text Auto-fill Annotations:", 
+                            label="Free-text Auto-fill Annotations:",
                             interactive=False
                         )
                 
                 with gr.Row():
                     annotation_status = gr.Textbox(label="Annotation Status", interactive=False)
-
+                
                 with gr.Row():
                     gr.Markdown("## Text content")
+                
                 with gr.Row():
                     current_index_display = gr.Markdown("**Current Index:** 0")
+                
                 with gr.Row():
                     transcript_box = RichTextbox(label="Text Content", interactive=False)
 
@@ -418,35 +452,69 @@ def create_ui():
                     []
                 )
             
+        # def handle_file_upload(file, codebook_file):
+        #     """Handle initial file upload and codebook"""
+        #     codebook_status = ""
+        #     current_codebook = []
+        #     codes = []
+            
+        #     if codebook_file:
+        #         codebook_status = annotator.upload_codebook(codebook_file)
+        #         current_codebook = annotator.load_codebook()
+        #         codes = [code["attribute"] for code in current_codebook]
+            
+        #     status, sheets, _ = annotator.upload_file(file, codebook_file)
+            
+        #     return (
+        #         f"{status}\n{codebook_status}",
+        #         gr.Dropdown(choices=sheets),
+        #         current_codebook,
+        #         gr.Dropdown(choices=codes),
+        #         gr.Dropdown(choices=codes),
+        #         gr.Dropdown(choices=codes),
+        #         process_df_for_display(None)  # Reset preview DataFrame
+        #     )
+
         def handle_file_upload(file, codebook_file):
             """Handle initial file upload and codebook"""
             codebook_status = ""
             current_codebook = []
             codes = []
-            
             if codebook_file:
                 codebook_status = annotator.upload_codebook(codebook_file)
                 current_codebook = annotator.load_codebook()
                 codes = [code["attribute"] for code in current_codebook]
-            
             status, sheets, _ = annotator.upload_file(file, codebook_file)
-            
             return (
                 f"{status}\n{codebook_status}",
                 gr.Dropdown(choices=sheets),
                 current_codebook,
-                gr.Dropdown(choices=codes),
-                gr.Dropdown(choices=codes),
-                gr.Dropdown(choices=codes),
-                process_df_for_display(None)  # Reset preview DataFrame
+                gr.Dropdown(choices=codes),  # code_select
+                gr.Dropdown(choices=codes),  # code_select1
+                gr.Dropdown(choices=codes),  # code_select2
+                gr.Dropdown(choices=codes),  # code_select3
+                gr.Dropdown(choices=codes),  # code_select4
+                gr.Radio(choices=[]),       # value_select
+                process_df_for_display(None)
             )
         
         # File upload handler
+        # file_upload.change(
+        #     fn=handle_file_upload,
+        #     inputs=[file_upload, codebook_upload],
+        #     outputs=[upload_status, sheet_select, codes_display, 
+        #             code_select, value_select, 
+        #             llm_code_select, preview_df]
+        # )
         file_upload.change(
             fn=handle_file_upload,
             inputs=[file_upload, codebook_upload],
-            outputs=[upload_status, sheet_select, codes_display, 
-                    code_select, value_select, llm_code_select, preview_df]
+            outputs=[
+                upload_status, sheet_select, codes_display,
+                code_select, code_select1, code_select2, 
+                code_select3, code_select4, value_select, 
+                preview_df
+            ]
         )
 
         # Sheet selection handler
@@ -720,7 +788,15 @@ def create_ui():
                             inputs=[sheet_select], 
                             outputs=[column_select])
         
-        code_select.change(fn=update_value_choices,inputs=[code_select], outputs=[value_select])
+        # Add event handler to sync primary code_select with code_select1
+        def sync_code_selects(choices):
+            return [gr.Dropdown(choices=choices) for _ in range(5)]  # For code_select and code_select1-4
+        
+        code_select.change(
+            fn=sync_code_selects,
+            inputs=[code_select],
+            outputs=[code_select, code_select1, code_select2, code_select3, code_select4]
+        )
         
 
         ################################################
@@ -918,24 +994,24 @@ def create_ui():
         )
 
 
-        def refresh_annotation_dropdowns():
-            """
-            Purpose: Updates all dropdown menus that contain category choices from the codebook. Used whenever the codebook is modified to ensure all dropdowns reflect current categories.
-            Inputs: None
-            Outputs: Two Gradio Dropdown components - one for category selection and one for value selection
-            """
-            try:
-                categories = [code["attribute"] for code in annotator.load_codebook()]
-                return (
-                    gr.Dropdown(choices=categories, value=None, allow_custom_value=True),
-                    gr.Dropdown(choices=[], value=None)#, allow_custom_value=True)
-                )
-            except Exception as e:
-                print(f"Error refreshing dropdowns: {e}")
-                return gr.Dropdown(), gr.Dropdown()
+        # def refresh_annotation_dropdowns():
+        #     """
+        #     Purpose: Updates all dropdown menus that contain category choices from the codebook. Used whenever the codebook is modified to ensure all dropdowns reflect current categories.
+        #     Inputs: None
+        #     Outputs: Two Gradio Dropdown components - one for category selection and one for value selection
+        #     """
+        #     try:
+        #         categories = [code["attribute"] for code in annotator.load_codebook()]
+        #         return (
+        #             gr.Dropdown(choices=categories, value=None, allow_custom_value=True),
+        #             gr.Dropdown(choices=[], value=None)#, allow_custom_value=True)
+        #         )
+        #     except Exception as e:
+        #         print(f"Error refreshing dropdowns: {e}")
+        #         return gr.Dropdown(), gr.Dropdown()
             
-        reload_codebook_btn_2.click(fn=refresh_annotation_dropdowns, 
-                                    outputs=[code_select, value_select])
+        # reload_codebook_btn_2.click(fn=refresh_annotation_dropdowns, 
+        #                             outputs=[code_select, value_select])
         
         
         
@@ -1005,86 +1081,167 @@ def create_ui():
             except Exception as e:
                 print(f"Error navigating transcripts: {e}")
                 return None, "**Current Index:** 0", "", ""
-            
+        
 
-        def save_and_next(code_name, value):
-            """Save annotation and move to next transcript"""
-            if not code_name or not value:
-                return (
-                    "Please select both category and value", 
-                    None, 
-                    "**Current Index:** 0",
-                    None, 
-                    None,
-                    None,
-                    None
-                )
-            
+        def refresh_all_dropdowns():
             try:
-                # Get the actual category value from the codebook
+                categories = [code["attribute"] for code in annotator.load_codebook()]
+                return [gr.Dropdown(choices=categories) for _ in range(4)]
+            except Exception as e:
+                print(f"Error refreshing dropdowns: {e}")
+                return [gr.Dropdown(choices=[]) for _ in range(4)]
+
+        reload_codebook_btn.click(
+            fn=refresh_all_dropdowns,
+            outputs=[code_select1, code_select2, code_select3, code_select4]
+        )
+
+        # Event handler for category selection
+        def update_value_choices(code_name):
+            if not code_name:
+                return gr.Radio(choices=[])
+            try:
                 codebook = annotator.load_codebook()
+                selected_code = None
                 for code in codebook:
                     if code['attribute'] == code_name:
-                        for category in code['categories']:
-                            icon = category.get('icon', '')
-                            full_category = f"{icon} {category['category']}" if icon else category['category']
-                            if full_category == value:
-                                # Create user annotation column if it doesn't exist
-                                user_column = f"user_{code_name}"
-                                if user_column not in annotator.df.columns:
-                                    annotator.df[user_column] = None
-                                
-                                # Save the actual category value without the icon
-                                annotator.df.at[annotator.current_index, user_column] = category['category']
-                                break
+                        selected_code = code
+                        break
                 
-                annotator.df.at[annotator.current_index, 'is_reviewed'] = True
-                
-                # Backup the dataframe
-                annotator.backup_df()
-                
-                # Move to next transcript
-                next_text, next_index = annotator.navigate_transcripts("next")
-                
-                # Get updated summaries
-                cat_summary, free_summary = get_autofill_summary(next_index)
-                
-                return (
-                    f"Saved {value} for {code_name} at index {annotator.current_index}", 
-                    next_text,
-                    f"**Current Index:** {next_index}",
-                    cat_summary,
-                    free_summary,
-                    annotator.df,
-                    f"Saved {value} for {code_name} at index {annotator.current_index}"  # Status message for annotation_status
-                )
-                
+                if selected_code:
+                    choices = []
+                    for category in selected_code['categories']:
+                        icon = category.get('icon', '')
+                        label = f"{icon} {category['category']}" if icon else category['category']
+                        choices.append(label)
+                    return gr.Radio(choices=choices)
+                return gr.Radio(choices=[])
             except Exception as e:
-                error_msg = f"Error saving annotation: {str(e)}"
-                return (
-                    error_msg, 
-                    None, 
-                    "**Current Index:** 0",
-                    None, 
-                    None, 
-                    None,
-                    error_msg  # Error message for annotation_status
-                )
+                print(f"Error updating value choices: {e}")
+                return gr.Radio(choices=[])
 
-        # Update the annotate_next_btn click handler
+        # Connect each code_select dropdown to its corresponding value_select
+        code_select1.change(
+            fn=update_value_choices,
+            inputs=[code_select1],
+            outputs=[value_select1]
+        )
+        code_select2.change(
+            fn=update_value_choices,
+            inputs=[code_select2],
+            outputs=[value_select2]
+        )
+        code_select3.change(
+            fn=update_value_choices,
+            inputs=[code_select3],
+            outputs=[value_select3]
+        )
+        code_select4.change(
+            fn=update_value_choices,
+            inputs=[code_select4],
+            outputs=[value_select4]
+        )
+
+
+        ##### multi label
+        # Event handlers for dynamic category selection
+        def update_category_columns(num_cats):
+            columns = [col1, col2, col3, col4]
+            visibilities = [False] * 4
+            for i in range(int(num_cats)):
+                visibilities[i] = True
+            return [gr.Column(visible=v) for v in visibilities]
+        
+        num_categories.change(
+            fn=update_category_columns,
+            inputs=[num_categories],
+            outputs=[col1, col2, col3, col4]
+        )
+
+        # Event handler for category selection
+        def update_value_choices_multi(code_name, dropdown_index):
+            if not code_name:
+                return gr.Radio(choices=[])
+            try:
+                codebook = annotator.load_codebook()
+                selected_code = None
+                for code in codebook:
+                    if code['attribute'] == code_name:
+                        selected_code = code
+                        break
+                
+                if selected_code:
+                    choices = []
+                    for category in selected_code['categories']:
+                        icon = category.get('icon', '')
+                        label = f"{icon} {category['category']}" if icon else category['category']
+                        choices.append(label)
+                    return gr.Radio(
+                        choices=choices,
+                        label="Select Value",
+                        value=None
+                    )
+                return gr.Radio(choices=[])
+            except Exception as e:
+                print(f"Error updating value choices: {e}")
+                return gr.Radio(choices=[])
+
+        # Connect each code_select dropdown to its corresponding value_select
+        code_select1.change(
+            fn=lambda x: update_value_choices_multi(x, 1),
+            inputs=[code_select1],
+            outputs=[value_select1]
+        )
+        code_select2.change(
+            fn=lambda x: update_value_choices_multi(x, 2),
+            inputs=[code_select2],
+            outputs=[value_select2]
+        )
+        code_select3.change(
+            fn=lambda x: update_value_choices_multi(x, 3),
+            inputs=[code_select3],
+            outputs=[value_select3]
+        )
+        code_select4.change(
+            fn=lambda x: update_value_choices_multi(x, 4),
+            inputs=[code_select4],
+            outputs=[value_select4]
+        )
+
+        def save_multiple_annotations(code1, value1, code2, value2, code3, value3, code4, value4, num_cats):
+            status_messages = []
+            for i, (code, value) in enumerate([(code1, value1), (code2, value2), 
+                                            (code3, value3), (code4, value4)], 1):
+                if i <= int(num_cats):
+                    if code and value:
+                        status, _ = annotator.save_annotation(code, value)
+                        status_messages.append(status)
+            
+            # Navigate to next transcript after saving
+            text, index = annotator.navigate_transcripts("next")
+            return ("\n".join(status_messages), 
+                    text, 
+                    f"**Current Index:** {index}", 
+                    *get_autofill_summary(index))
+        
         annotate_next_btn.click(
-            fn=save_and_next,
-            inputs=[code_select, value_select],
+            fn=save_multiple_annotations,
+            inputs=[
+                code_select1, value_select1,
+                code_select2, value_select2,
+                code_select3, value_select3,
+                code_select4, value_select4,
+                num_categories
+            ],
             outputs=[
-                gr.Textbox(visible=False),  # Hidden status
+                annotation_status,
                 transcript_box,
                 current_index_display,
                 categorical_summary,
-                freetext_summary,
-                preview_df,
-                annotation_status  # Add annotation_status to outputs
+                freetext_summary
             ]
         )
+            
         
         prev_btn.click(
             fn=lambda: navigate_transcripts("prev"),

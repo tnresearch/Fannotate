@@ -262,9 +262,6 @@ def create_ui():
                 with gr.Row():
                     gr.Markdown("Manual review of the annotated data.")
                 
-                with gr.Row():
-                    prev_btn = gr.Button("Previous")
-                    next_btn = gr.Button("Next")
                 
                 with gr.Row():
                     num_categories = gr.Dropdown(
@@ -295,8 +292,12 @@ def create_ui():
                         value_select4 = gr.Radio(label="(2) Select Value", choices=[], interactive=True)
                 
                 with gr.Row():
-                    annotate_next_btn = gr.Button("Annotate and continue to next!", variant="primary", size="lg")
                     reload_codebook_btn = gr.Button("🔄 Reload Categories", variant="secondary")
+                    annotate_next_btn = gr.Button("Annotate and continue to next!", variant="primary", size="lg")
+
+                with gr.Row():
+                    prev_btn = gr.Button("Previous")
+                    next_btn = gr.Button("Next")
                 
                 with gr.Row():
                     gr.Markdown("## LLM suggestions")
@@ -451,29 +452,6 @@ def create_ui():
                     gr.Dropdown(choices=[]),
                     []
                 )
-            
-        # def handle_file_upload(file, codebook_file):
-        #     """Handle initial file upload and codebook"""
-        #     codebook_status = ""
-        #     current_codebook = []
-        #     codes = []
-            
-        #     if codebook_file:
-        #         codebook_status = annotator.upload_codebook(codebook_file)
-        #         current_codebook = annotator.load_codebook()
-        #         codes = [code["attribute"] for code in current_codebook]
-            
-        #     status, sheets, _ = annotator.upload_file(file, codebook_file)
-            
-        #     return (
-        #         f"{status}\n{codebook_status}",
-        #         gr.Dropdown(choices=sheets),
-        #         current_codebook,
-        #         gr.Dropdown(choices=codes),
-        #         gr.Dropdown(choices=codes),
-        #         gr.Dropdown(choices=codes),
-        #         process_df_for_display(None)  # Reset preview DataFrame
-        #     )
 
         def handle_file_upload(file, codebook_file):
             """Handle initial file upload and codebook"""
@@ -498,14 +476,6 @@ def create_ui():
                 process_df_for_display(None)
             )
         
-        # File upload handler
-        # file_upload.change(
-        #     fn=handle_file_upload,
-        #     inputs=[file_upload, codebook_upload],
-        #     outputs=[upload_status, sheet_select, codes_display, 
-        #             code_select, value_select, 
-        #             llm_code_select, preview_df]
-        # )
         file_upload.change(
             fn=handle_file_upload,
             inputs=[file_upload, codebook_upload],

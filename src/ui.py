@@ -57,18 +57,33 @@ def create_ui():
                     gr.Markdown("Specify the endpoint, API-key (optional) and Model name of the LLM to use.")
                 
                 with gr.Row():
-                    llm_url = gr.Textbox(label="LLM Endpoint URL", 
-                                        value="http://192.168.50.155:8000/v1/")
-                    llm_api_key = gr.Textbox(label="API Key", 
-                                            value="token-abc123")
-                    llm_model = gr.Textbox(label="Model Name", 
-                                        value="google/gemma-2-2b-it")
+                    # llm_url = gr.Textbox(label="LLM Endpoint URL", 
+                    #                     value="http://192.168.50.155:8000/v1/")
+                    
                     llm_framework = gr.Dropdown(
                                         label="LLM Framework",
                                         choices=["vLLM", "OpenAI"],
                                         value="vLLM",
                                         interactive=True
                                     )
+                    
+                    llm_url = gr.Dropdown(
+                                        label="LLM Endpoint URL",
+                                        choices=["http://192.168.50.155:8000/v1/","http://172.16.16.48:8000/v1/","https://api.openai.com/v1/"],
+                                        interactive=True,
+                                        allow_custom_value=True  # Allows typing custom values
+                                    )
+                    
+                    llm_model = gr.Dropdown(
+                                        label="Model Name", 
+                                        choices=["google/gemma-2-2b-it","google/gemma-2-9b-it","google/gemma-2-27b-it", "meta-llama/Llama-3.1-8B-Instruct","meta-llama/Llama-3.1-70B-Instruct","meta-llama/Llama-3.1-405B-Instruct","gpt-4o"],
+                                        interactive=True,
+                                        allow_custom_value=True  # Allows typing custom values
+                                    )
+                    
+                    llm_api_key = gr.Textbox(label="API Key (optional)", 
+                                            value="token-abc123")
+                    
                 
                 with gr.Row():
                     apply_llm_settings_btn = gr.Button("Apply LLM Settings", variant="primary")
@@ -94,7 +109,7 @@ def create_ui():
                                 """)
                 with gr.Row():
                     gr.Markdown("""### Model Name:
-                                        It is highly suggested to use *permissively licensed* LLMs that allow distillation/creation of training data for training of competing models (No OpenAI models can be used legally for this, due to <a href="https://openai.com/policies/row-terms-of-use/">OpenAI TOS</a>. """)
+                                        It is suggested to use *permissively licensed* LLMs that allow distillation/creation of data for training of language models (OpenAI does not permit this use, see: <a href="https://openai.com/policies/row-terms-of-use/">OpenAI TOS</a>. """)
                 with gr.Row():
                     with gr.Column(scale=1):
                         with gr.Row():
@@ -681,12 +696,15 @@ def create_ui():
         ################################################
         # Settings
         ################################################
-
+ 
         def apply_llm_settings(framework, url, api_key, model):
-            from lm import update_llm_config
+            from lm import update_llm_config, config
             update_llm_config(framework, url, api_key, model)
-            return f"LLM settings applied successfully. Framework: {framework}, Endpoint: {url}, Model: {model}"
-        
+            # Verify the update
+            if config.framework != framework:
+                return f"Error: Framework not updated. Current framework: {config.framework}"
+            return f"LLM settings applied successfully. Framework: {config.framework}, Endpoint: {config.base_url}, Model: {config.model}"
+                
         apply_llm_settings_btn.click(
             fn=apply_llm_settings,
             inputs=[llm_framework, llm_url, llm_api_key, llm_model],

@@ -152,6 +152,9 @@ def create_ui():
                 with gr.Row():
                     gr.Markdown("## Annotation codebook")
                 
+                    # Create a state variable for visibility
+                    show_group = gr.State(value=False)
+    
                 #with gr.Group():  
                 with gr.Row():
                     gr.Markdown("Upload existing codebook or initialize a new one.")
@@ -163,10 +166,12 @@ def create_ui():
                     gr.Markdown("## Current codebook")
                 with gr.Row():
                     codes_display = gr.JSON(label="Current Codebook")                    
-                with gr.Row():
-                    gr.Markdown("## (1) Add New Attribute")
+                with gr.Row(): 
+                    toggle_btn = gr.Button("Attribute editor")
 
-                with gr.Group():                    
+                with gr.Group(visible=False) as hidden_group1:                    
+                    with gr.Row():
+                        gr.Markdown("## (1) Add New Attribute")      
                     with gr.Row():
                         with gr.Column(scale=1):
                             attribute_name = gr.Textbox(
@@ -196,11 +201,11 @@ def create_ui():
                     with gr.Row():
                         add_attribute_btn = gr.Button("Add Attribute", variant="secondary")#, variant="primary")
 
-                with gr.Row():
-                    gr.Markdown("## (2) Add Category to Attribute")
+                
 
-
-                with gr.Group():      
+                with gr.Group(visible=False) as hidden_group2:
+                    with gr.Row():
+                        gr.Markdown("## (2) Add Category to Attribute")
                     with gr.Row():
                         with gr.Column(scale=1):
                             attribute_select = gr.Dropdown(
@@ -230,6 +235,29 @@ def create_ui():
                         add_category_btn = gr.Button("Add Category", variant="secondary")#, variant="primary")
 
 
+            # Event handler to show the group
+            def toggle_groups(show):
+                """Toggle visibility of both groups simultaneously"""
+                new_state = not show
+                button_text = "Hide Attribute Editor" if new_state else "Show Attribute Editor"
+                return [
+                    gr.Group(visible=new_state),  # hidden_group1
+                    gr.Group(visible=new_state),  # hidden_group2
+                    gr.Button(button_text),  # toggle_btn
+                    new_state  # show_group
+                ]
+
+            # Single click handler for both groups
+            toggle_btn.click(
+                fn=toggle_groups,
+                inputs=[show_group],
+                outputs=[
+                    hidden_group1,
+                    hidden_group2,
+                    toggle_btn,
+                    show_group
+                ]
+            )
             
             ###################################
             # Auto-fill Tab

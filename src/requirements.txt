@@ -5,3 +5,4 @@ xlrd
 openai
 gradio_rich_textbox=0.4.3
 scikit-learn
+seaborn

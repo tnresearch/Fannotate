@@ -5,6 +5,9 @@ from annotator import TranscriptionAnnotator
 from lm import batch_process_transcripts
 from gradio_rich_textbox import RichTextbox
 from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 # annotation object
 annotator = TranscriptionAnnotator()
@@ -373,32 +376,147 @@ def create_ui():
             ###################################
             # Status Tab
             ###################################
+            # with gr.Tab("📊 Status"):
+            #     with gr.Row():
+            #         gr.Markdown("## Annotation Progress")
+                
+            #     with gr.Row():
+            #         review_progress = gr.Markdown("Loading progress...")
+                
+            #     with gr.Row():
+            #         gr.Markdown("## Agreement Analysis")
+                
+            #     with gr.Row():
+            #         with gr.Column():
+            #             category_select = gr.Dropdown(
+            #                 label="Select Category to Analyze",
+            #                 choices=[],
+            #                 interactive=True
+            #             )
+            #         with gr.Column():
+            #             refresh_codebook_btn_3 = gr.Button("🔄 Refresh Categories", variant="secondary")
+            #             refresh_stats_btn = gr.Button("Refresh Statistics", variant="primary")
+                
+            #     with gr.Row():
+            #         metrics_display = RichTextbox(
+            #             label="Classification Metrics",
+            #             interactive=False
+            #         )
             with gr.Tab("📊 Status"):
                 with gr.Row():
                     gr.Markdown("## Annotation Progress")
-                
                 with gr.Row():
                     review_progress = gr.Markdown("Loading progress...")
-                
+                    
                 with gr.Row():
                     gr.Markdown("## Agreement Analysis")
                 
                 with gr.Row():
-                    with gr.Column():
+                    # Left column for existing controls
+                    with gr.Column(scale=1):
                         category_select = gr.Dropdown(
                             label="Select Category to Analyze",
                             choices=[],
                             interactive=True
                         )
-                    with gr.Column():
-                        refresh_codebook_btn_3 = gr.Button("🔄 Refresh Categories", variant="secondary")
-                        refresh_stats_btn = gr.Button("Refresh Statistics", variant="primary")
-                
+                        with gr.Row():
+                            refresh_codebook_btn_3 = gr.Button("🔄 Refresh Categories", variant="secondary")
+                            refresh_stats_btn = gr.Button("Refresh Statistics", variant="primary")
+                        metrics_display = RichTextbox(
+                            label="Classification Metrics",
+                            interactive=False
+                        )
+                    
+                    # Right column for confusion matrix
                 with gr.Row():
-                    metrics_display = RichTextbox(
-                        label="Classification Metrics",
-                        interactive=False
+                    confusion_matrix_plot = gr.Plot(
+                        label="Confusion Matrix"
                     )
+
+            def update_statistics(category):
+                try:
+                    if not category:
+                        return "Please select a category", None
+                        
+                    auto_col = f"autofill_{category}"
+                    user_col = f"user_{category}"
+                    
+                    if auto_col not in annotator.df.columns or user_col not in annotator.df.columns:
+                        return "No comparison data available for this category", None
+                        
+                    # Get only rows where both auto and user annotations exist
+                    mask = annotator.df[auto_col].notna() & annotator.df[user_col].notna()
+                    if not mask.any():
+                        return "No matching annotations found for comparison", None
+                        
+                    y_true = annotator.df[user_col][mask]
+                    y_pred = annotator.df[auto_col][mask]
+                    
+                    # Calculate metrics
+                    accuracy = accuracy_score(y_true, y_pred)
+                    f1 = f1_score(y_true, y_pred, average='weighted')
+                    
+                    # Create metrics text
+                    metrics_text = f"**Metrics for {category}:**\n\n"
+                    metrics_text += f"- Accuracy: {accuracy:.2f}\n"
+                    metrics_text += f"- F1 Score: {f1:.2f}\n"
+                    
+                    # Clear any existing plots
+                    plt.close('all')
+                    
+                    # Set style for dark background
+                    plt.style.use('dark_background')
+                    
+                    # Create figure and axis with dark background
+                    fig, ax = plt.subplots(figsize=(8, 6))
+                    # fig.patch.set_facecolor('#1a1a1a')
+                    # ax.set_facecolor('#1a1a1a')
+                    
+                    # Get unique labels
+                    labels = sorted(list(set(y_true) | set(y_pred)))
+                    
+                    # Create confusion matrix
+                    cm = confusion_matrix(y_true, y_pred, labels=labels)
+                    
+                    # Create heatmap with customized appearance
+                    sns.heatmap(
+                        cm, 
+                        annot=True, 
+                        fmt='d',
+                        #cmap="dark:salmon",#'magma',
+                        #cmap=sns.color_palette("dark:salmon", as_cmap=True), #looks fine, works with white
+                        cmap=sns.dark_palette("#69d", as_cmap=True), # #ff7c37 # #69d
+                        xticklabels=labels,
+                        yticklabels=labels,
+                        ax=ax,
+                        cbar_kws={'label': 'Count'},
+                        annot_kws={'color': 'white', 'fontsize': 10}
+                    )
+                    
+                    # Customize plot appearance
+                    plt.title(f'Confusion Matrix - {category}', color='white', pad=20)
+                    plt.ylabel('Human annotation', color='white')
+                    plt.xlabel('Model annotation', color='white')
+                    
+                    # Style the tick labels
+                    ax.tick_params(colors='white')
+                    
+                    # Adjust layout to prevent label cutoff
+                    plt.tight_layout()
+                    
+                    return metrics_text, fig
+                    
+                except Exception as e:
+                    print(f"Error in update_statistics: {str(e)}")
+                    return f"Error calculating statistics: {str(e)}", None
+
+
+            # Update event handler
+            refresh_stats_btn.click(
+                fn=update_statistics,
+                inputs=[category_select],
+                outputs=[metrics_display, confusion_matrix_plot]
+            )
 
 
             

@@ -419,15 +419,16 @@ def create_ui():
                             choices=[],
                             interactive=True
                         )
-                        with gr.Row():
-                            refresh_codebook_btn_3 = gr.Button("🔄 Refresh Categories", variant="secondary")
-                            refresh_stats_btn = gr.Button("Refresh Statistics", variant="primary")
-                        metrics_display = RichTextbox(
-                            label="Classification Metrics",
-                            interactive=False
-                        )
+                    with gr.Column(scale=1):
+                        refresh_codebook_btn_3 = gr.Button("🔄 Refresh Categories", variant="secondary")
+                        refresh_stats_btn = gr.Button("Refresh Statistics", variant="primary")
                     
-                    # Right column for confusion matrix
+                
+                with gr.Row():
+                    metrics_display = RichTextbox(
+                        label="Classification Metrics",
+                        interactive=False
+                    )
                 with gr.Row():
                     confusion_matrix_plot = gr.Plot(
                         label="Confusion Matrix"
@@ -450,16 +451,18 @@ def create_ui():
                         return "No matching annotations found for comparison", None
                         
                     y_true = annotator.df[user_col][mask]
-                    y_pred = annotator.df[auto_col][mask]
-                    
+                    y_pred = annotator.df[auto_col][mask] 
+
                     # Calculate metrics
-                    accuracy = accuracy_score(y_true, y_pred)
-                    f1 = f1_score(y_true, y_pred, average='weighted')
-                    
-                    # Create metrics text
-                    metrics_text = f"**Metrics for {category}:**\n\n"
-                    metrics_text += f"- Accuracy: {accuracy:.2f}\n"
-                    metrics_text += f"- F1 Score: {f1:.2f}\n"
+                    metrics = [
+                        f"[b][u]Accuracy[/u][/b]: {accuracy_score(y_true, y_pred):.3f}",
+                        f"[b][u]Macro F1[/u][/b]: {f1_score(y_true, y_pred, average='macro'):.3f}",
+                        f"[b][u]Weighted F1[/u][/b]: {f1_score(y_true, y_pred, average='weighted'):.3f}",
+                        f"[b][u]Samples Compared[/u][/b]: {len(y_true)}",
+                        f"[b][u]Agreement Rate[/u][/b]: {(y_true == y_pred).mean():.3f}"
+                    ]
+
+                    metrics_text = "<br><br>".join(metrics)
                     
                     # Clear any existing plots
                     plt.close('all')
@@ -1126,28 +1129,6 @@ def create_ui():
             inputs=[llm_code_select],
             outputs=[llm_instruction]
         )
-
-
-        # def refresh_annotation_dropdowns():
-        #     """
-        #     Purpose: Updates all dropdown menus that contain category choices from the codebook. Used whenever the codebook is modified to ensure all dropdowns reflect current categories.
-        #     Inputs: None
-        #     Outputs: Two Gradio Dropdown components - one for category selection and one for value selection
-        #     """
-        #     try:
-        #         categories = [code["attribute"] for code in annotator.load_codebook()]
-        #         return (
-        #             gr.Dropdown(choices=categories, value=None, allow_custom_value=True),
-        #             gr.Dropdown(choices=[], value=None)#, allow_custom_value=True)
-        #         )
-        #     except Exception as e:
-        #         print(f"Error refreshing dropdowns: {e}")
-        #         return gr.Dropdown(), gr.Dropdown()
-            
-        # reload_codebook_btn_2.click(fn=refresh_annotation_dropdowns, 
-        #                             outputs=[code_select, value_select])
-        
-        
         
         ################################################
         # Review tab

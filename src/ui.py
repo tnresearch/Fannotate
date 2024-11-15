@@ -376,32 +376,6 @@ def create_ui():
             ###################################
             # Status Tab
             ###################################
-            # with gr.Tab("📊 Status"):
-            #     with gr.Row():
-            #         gr.Markdown("## Annotation Progress")
-                
-            #     with gr.Row():
-            #         review_progress = gr.Markdown("Loading progress...")
-                
-            #     with gr.Row():
-            #         gr.Markdown("## Agreement Analysis")
-                
-            #     with gr.Row():
-            #         with gr.Column():
-            #             category_select = gr.Dropdown(
-            #                 label="Select Category to Analyze",
-            #                 choices=[],
-            #                 interactive=True
-            #             )
-            #         with gr.Column():
-            #             refresh_codebook_btn_3 = gr.Button("🔄 Refresh Categories", variant="secondary")
-            #             refresh_stats_btn = gr.Button("Refresh Statistics", variant="primary")
-                
-            #     with gr.Row():
-            #         metrics_display = RichTextbox(
-            #             label="Classification Metrics",
-            #             interactive=False
-            #         )
             with gr.Tab("📊 Status"):
                 with gr.Row():
                     gr.Markdown("## Annotation Progress")

@@ -133,53 +133,49 @@ class TranscriptionAnnotator:
             print(f"Error getting code values: {e}")
             return []
 
-    # def save_annotation(self, code_name, value):
-    #     if self.df is None:
-    #         return "Please load data first", None
-    #     if not code_name or not value:
-    #         return "Please select both category and value", None
-    #     try:
-    #         with open(self.codebook_path, 'r') as f:
-    #             codebook = json.load(f)
-    #             code_exists = any(code['attribute'] == code_name for code in codebook['codes'])
-    #         if not code_exists:
-    #             return f"Code {code_name} not found in codebook", None
-            
-    #         self.df.at[self.current_index, code_name] = value
-    #         self.df.at[self.current_index, 'is_reviewed'] = True
-    #         self.backup_df()
-    #         return f"Saved {value} for {code_name} at index {self.current_index}", self.df
-    #     except Exception as e:
-    #         return f"Error saving annotation: {str(e)}", None
-
     def save_annotation(self, code_name, value):
-        if self.df is None:
-            return "Please load data first", None
-        if not code_name or not value:
-            return "Please select both category and value", None
+        """
+        Save an annotation for the current transcript.
         
+        Args:
+            code_name (str): The name of the code/category
+            value (str): The annotation value
+        """
         try:
-            with open(self.codebook_path, 'r') as f:
-                codebook = json.load(f)
+            if self.df is None:
+                return "No data loaded", None
             
-            code_exists = any(code['attribute'] == code_name for code in codebook['codes'])
-            if not code_exists:
-                return f"Code {code_name} not found in codebook", None
+            # Clean the column name
+            clean_name = code_name.strip().replace('[','').replace(']','').replace("'", '').replace(" ", '_')
+            column_name = f"user_{clean_name}"
             
-            # Clean the value by removing emoji if present
-            value = value.split(" ")[-1] if " " in value else value
+            # Get the attribute type from codebook
+            codebook = self.load_codebook()
+            attr_type = 'categorical'  # default
+            for code in codebook:
+                if code['attribute'] == code_name:
+                    attr_type = code.get('type', 'categorical')
+                    break
             
-            # Create column name for user annotation
-            column_name = f"user_{code_name}"
-            self.df[column_name] = self.df[column_name] if column_name in self.df.columns else None
+            # For freetext type, use the value as-is without any processing
+            # For categorical type, continue with existing processing
+            if attr_type == 'freetext':
+                annotation_value = value
+            else:
+                # Strip any emoji prefix if present
+                annotation_value = value.split()[-1] if value else None
             
-            self.df.at[self.current_index, column_name] = value
+            # Save the annotation
+            self.df.at[self.current_index, column_name] = annotation_value
             self.df.at[self.current_index, 'is_reviewed'] = True
             
+            # Backup after each annotation
             self.backup_df()
-            return f"Saved {value} for {code_name} at index {self.current_index}", self.df
-        
+            
+            return f"Saved annotation for {code_name}: {annotation_value}", annotation_value
+            
         except Exception as e:
+            print(f"Error saving annotation: {e}")
             return f"Error saving annotation: {str(e)}", None
 
     def navigate_transcripts(self, direction):

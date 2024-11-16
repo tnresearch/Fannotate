@@ -191,39 +191,52 @@ def create_ui():
                     print(f"Error processing DataFrame: {e}")
                     return None
 
-            def update_value_choices(code_name):
-                """Updates the radio button choices based on selected category"""
+            def update_value_choices_multi(code_name, dropdown_index):
+                """Updates the value selection component based on the attribute type"""
                 if not code_name:
-                    return gr.Radio(choices=[])
-                
+                    return [
+                        gr.Radio(choices=[], visible=False),
+                        gr.Textbox(value="", visible=False)
+                    ]
                 try:
-                    # Load codebook to get category type
                     codebook = annotator.load_codebook()
                     selected_code = None
                     for code in codebook:
                         if code['attribute'] == code_name:
                             selected_code = code
                             break
-                            
-                    if selected_code:
-                        # Get values and their icons
-                        choices = []
-                        for category in selected_code['categories']:
-                            icon = category.get('icon', '')
-                            label = f"{icon} {category['category']}" if icon else category['category']
-                            choices.append(label)
-                        
-                        return gr.Radio(
-                            choices=choices,
-                            label="Select Value",
-                            value=None  # Reset selection when category changes
-                        )
-                    return gr.Radio(choices=[])
                     
+                    if selected_code:
+                        # Check the attribute type
+                        is_categorical = selected_code.get('type', 'categorical') == 'categorical'
+                        
+                        if is_categorical:
+                            choices = []
+                            for category in selected_code['categories']:
+                                icon = category.get('icon', '')
+                                label = f"{icon} {category['category']}" if icon else category['category']
+                                choices.append(label)
+                            return [
+                                gr.Radio(choices=choices, label="Select Value", visible=True),
+                                gr.Textbox(value="", visible=False)
+                            ]
+                        else:
+                            # For freetext type
+                            return [
+                                gr.Radio(choices=[], visible=False),
+                                gr.Textbox(label="Enter Value", visible=True)
+                            ]
+                    return [
+                        gr.Radio(choices=[], visible=False),
+                        gr.Textbox(value="", visible=False)
+                    ]
                 except Exception as e:
                     print(f"Error updating value choices: {e}")
-                    return gr.Radio(choices=[])
-            
+                    return [
+                        gr.Radio(choices=[], visible=False),
+                        gr.Textbox(value="", visible=False)
+                    ]
+
             sheet_select.change(fn=lambda x: gr.Dropdown(choices=annotator.get_columns(x)), 
                                 inputs=[sheet_select], 
                                 outputs=[column_select])
@@ -298,7 +311,7 @@ def create_ui():
                                 allow_custom_value=False,
                                 #placeholder="Choose an attribute to add categories to"
                             )
-                            reload_attributes_btn = gr.Button("🔄 Reload Attributes")
+                            reload_attributes_btn = gr.Button(" Reload Attributes")
                             category_name = gr.Textbox(
                                 label="Category Name",
                                 #placeholder="Enter the name of the category"
@@ -596,19 +609,23 @@ def create_ui():
                 with category_columns:
                     with gr.Column(visible=True) as col1:
                         code_select1 = gr.Dropdown(label="(1) Select Category", choices=[], interactive=True)
-                        value_select1 = gr.Radio(label="(2) Select Value", choices=[], interactive=True)
+                        value_select1_radio = gr.Radio(label="(2) Select Value", choices=[], interactive=True, visible=False)
+                        value_select1_text = gr.Textbox(label="(2) Enter Value", interactive=True, visible=False)
                     
                     with gr.Column(visible=False) as col2:
                         code_select2 = gr.Dropdown(label="(1) Select Category", choices=[], interactive=True)
-                        value_select2 = gr.Radio(label="(2) Select Value", choices=[], interactive=True)
+                        value_select2_radio = gr.Radio(label="(2) Select Value", choices=[], interactive=True, visible=False)
+                        value_select2_text = gr.Textbox(label="(2) Enter Value", interactive=True, visible=False)
                     
                     with gr.Column(visible=False) as col3:
                         code_select3 = gr.Dropdown(label="(1) Select Category", choices=[], interactive=True)
-                        value_select3 = gr.Radio(label="(2) Select Value", choices=[], interactive=True)
+                        value_select3_radio = gr.Radio(label="(2) Select Value", choices=[], interactive=True, visible=False)
+                        value_select3_text = gr.Textbox(label="(2) Enter Value", interactive=True, visible=False)
                     
                     with gr.Column(visible=False) as col4:
                         code_select4 = gr.Dropdown(label="(1) Select Category", choices=[], interactive=True)
-                        value_select4 = gr.Radio(label="(2) Select Value", choices=[], interactive=True)
+                        value_select4_radio = gr.Radio(label="(2) Select Value", choices=[], interactive=True, visible=False)
+                        value_select4_text = gr.Textbox(label="(2) Enter Value", interactive=True, visible=False)
                 
                 with gr.Row():
                     reload_codebook_btn = gr.Button("🔄 Reload Categories", variant="secondary")
@@ -630,7 +647,7 @@ def create_ui():
                     with gr.Column():
                         freetext_summary = RichTextbox(
                             label="Free-text Auto-fill Annotations:",
-                            interactive=False
+                            interactive=True
                         )
                 
                 with gr.Row():
@@ -726,9 +743,13 @@ def create_ui():
             )
 
             # Event handler for category selection
-            def update_value_choices(code_name):
+            def update_value_choices_multi(code_name, dropdown_index):
+                """Updates the value selection component based on the attribute type"""
                 if not code_name:
-                    return gr.Radio(choices=[])
+                    return [
+                        gr.Radio(choices=[], visible=False),
+                        gr.Textbox(value="", visible=False)
+                    ]
                 try:
                     codebook = annotator.load_codebook()
                     selected_code = None
@@ -738,37 +759,56 @@ def create_ui():
                             break
                     
                     if selected_code:
-                        choices = []
-                        for category in selected_code['categories']:
-                            icon = category.get('icon', '')
-                            label = f"{icon} {category['category']}" if icon else category['category']
-                            choices.append(label)
-                        return gr.Radio(choices=choices)
-                    return gr.Radio(choices=[])
+                        # Check the attribute type
+                        is_categorical = selected_code.get('type', 'categorical') == 'categorical'
+                        
+                        if is_categorical:
+                            choices = []
+                            for category in selected_code['categories']:
+                                icon = category.get('icon', '')
+                                label = f"{icon} {category['category']}" if icon else category['category']
+                                choices.append(label)
+                            return [
+                                gr.Radio(choices=choices, label="Select Value", visible=True),
+                                gr.Textbox(value="", visible=False)
+                            ]
+                        else:
+                            # For freetext type
+                            return [
+                                gr.Radio(choices=[], visible=False),
+                                gr.Textbox(label="Enter Value", visible=True)
+                            ]
+                    return [
+                        gr.Radio(choices=[], visible=False),
+                        gr.Textbox(value="", visible=False)
+                    ]
                 except Exception as e:
                     print(f"Error updating value choices: {e}")
-                    return gr.Radio(choices=[])
+                    return [
+                        gr.Radio(choices=[], visible=False),
+                        gr.Textbox(value="", visible=False)
+                    ]
 
             # Connect each code_select dropdown to its corresponding value_select
             code_select1.change(
-                fn=update_value_choices,
+                fn=lambda x: update_value_choices_multi(x, 1),
                 inputs=[code_select1],
-                outputs=[value_select1]
+                outputs=[value_select1_radio, value_select1_text]
             )
             code_select2.change(
-                fn=update_value_choices,
+                fn=lambda x: update_value_choices_multi(x, 2),
                 inputs=[code_select2],
-                outputs=[value_select2]
+                outputs=[value_select2_radio, value_select2_text]
             )
             code_select3.change(
-                fn=update_value_choices,
+                fn=lambda x: update_value_choices_multi(x, 3),
                 inputs=[code_select3],
-                outputs=[value_select3]
+                outputs=[value_select3_radio, value_select3_text]
             )
             code_select4.change(
-                fn=update_value_choices,
+                fn=lambda x: update_value_choices_multi(x, 4),
                 inputs=[code_select4],
-                outputs=[value_select4]
+                outputs=[value_select4_radio, value_select4_text]
             )
 
 
@@ -787,79 +827,55 @@ def create_ui():
                 outputs=[col1, col2, col3, col4]
             )
 
-            # Event handler for category selection
-            def update_value_choices_multi(code_name, dropdown_index):
-                if not code_name:
-                    return gr.Radio(choices=[])
-                try:
-                    codebook = annotator.load_codebook()
-                    selected_code = None
-                    for code in codebook:
-                        if code['attribute'] == code_name:
-                            selected_code = code
-                            break
-                    
-                    if selected_code:
-                        choices = []
-                        for category in selected_code['categories']:
-                            icon = category.get('icon', '')
-                            label = f"{icon} {category['category']}" if icon else category['category']
-                            choices.append(label)
-                        return gr.Radio(
-                            choices=choices,
-                            label="Select Value",
-                            value=None
-                        )
-                    return gr.Radio(choices=[])
-                except Exception as e:
-                    print(f"Error updating value choices: {e}")
-                    return gr.Radio(choices=[])
-
-            # Connect each code_select dropdown to its corresponding value_select
-            code_select1.change(
-                fn=lambda x: update_value_choices_multi(x, 1),
-                inputs=[code_select1],
-                outputs=[value_select1]
-            )
-            code_select2.change(
-                fn=lambda x: update_value_choices_multi(x, 2),
-                inputs=[code_select2],
-                outputs=[value_select2]
-            )
-            code_select3.change(
-                fn=lambda x: update_value_choices_multi(x, 3),
-                inputs=[code_select3],
-                outputs=[value_select3]
-            )
-            code_select4.change(
-                fn=lambda x: update_value_choices_multi(x, 4),
-                inputs=[code_select4],
-                outputs=[value_select4]
-            )
-
-            def save_multiple_annotations(code1, value1, code2, value2, code3, value3, code4, value4, num_cats):
+            def save_multiple_annotations(code1, value1_radio, value1_text, 
+                                        code2, value2_radio, value2_text,
+                                        code3, value3_radio, value3_text,
+                                        code4, value4_radio, value4_text, 
+                                        num_cats):
                 status_messages = []
-                for i, (code, value) in enumerate([(code1, value1), (code2, value2), 
-                                                (code3, value3), (code4, value4)], 1):
+                for i, (code, radio_val, text_val) in enumerate([
+                    (code1, value1_radio, value1_text),
+                    (code2, value2_radio, value2_text),
+                    (code3, value3_radio, value3_text),
+                    (code4, value4_radio, value4_text)
+                ], 1):
                     if i <= int(num_cats):
-                        if code and value:
-                            status, _ = annotator.save_annotation(code, value)
-                            status_messages.append(status)
-                
+                        if code:
+                            # Determine if this is a categorical or freetext attribute
+                            codebook = annotator.load_codebook()
+                            attr_type = 'categorical'  # default
+                            for c in codebook:
+                                if c['attribute'] == code:
+                                    attr_type = c.get('type', 'categorical')
+                                    break
+                            
+                            # For categorical type, use radio_val (current behavior)
+                            # For freetext type, use the entire text_val without any processing
+                            if attr_type == 'categorical':
+                                value = radio_val
+                            else:
+                                value = text_val  # Use raw text input without any processing
+
+                            if value:  # Check if there's any input
+                                status, _ = annotator.save_annotation(code, value)
+                                status_messages.append(status)
+
                 # Navigate to next transcript after saving
                 text, index = annotator.navigate_transcripts("next")
-                return ("\n".join(status_messages), 
-                        text, 
-                        f"**Current Index:** {index}", 
-                        *get_autofill_summary(index))
+                return (
+                    "\n".join(status_messages), 
+                    text, 
+                    f"**Current Index:** {index}", 
+                    *get_autofill_summary(index)
+                )
             
             annotate_next_btn.click(
                 fn=save_multiple_annotations,
                 inputs=[
-                    code_select1, value_select1,
-                    code_select2, value_select2,
-                    code_select3, value_select3,
-                    code_select4, value_select4,
+                    code_select1, value_select1_radio, value_select1_text,
+                    code_select2, value_select2_radio, value_select2_text,
+                    code_select3, value_select3_radio, value_select3_text,
+                    code_select4, value_select4_radio, value_select4_text,
                     num_categories
                 ],
                 outputs=[
@@ -936,65 +952,166 @@ def create_ui():
                     if not mask.any():
                         return "No matching annotations found for comparison", None
                         
+                    # Get the attribute type from codebook
+                    codebook = annotator.load_codebook()
+                    attr_type = 'categorical'  # default
+                    for code in codebook:
+                        if code['attribute'] == category:
+                            attr_type = code.get('type', 'categorical')
+                            break
+
                     y_true = annotator.df[user_col][mask]
-                    y_pred = annotator.df[auto_col][mask] 
+                    y_pred = annotator.df[auto_col][mask]
 
-                    # Calculate metrics
-                    metrics = [
-                        f"[b][u]Accuracy[/u][/b]: {accuracy_score(y_true, y_pred):.3f}",
-                        f"[b][u]Macro F1[/u][/b]: {f1_score(y_true, y_pred, average='macro'):.3f}",
-                        f"[b][u]Weighted F1[/u][/b]: {f1_score(y_true, y_pred, average='weighted'):.3f}",
-                        f"[b][u]Samples Compared[/u][/b]: {len(y_true)}",
-                        f"[b][u]Agreement Rate[/u][/b]: {(y_true == y_pred).mean():.3f}"
-                    ]
+                    if attr_type == 'freetext':
+                        try:
+                            # BERTScore calculation
+                            from bert_score import BERTScorer
+                            scorer = BERTScorer(
+                                model_type="bert-base-uncased",
+                                num_layers=None
+                            )
+                            
+                            # Calculate BERTScore
+                            P, R, F1 = scorer.score(y_pred.tolist(), y_true.tolist())
+                            
+                            # Calculate mean scores
+                            mean_bert_p = P.mean().item()
+                            mean_bert_r = R.mean().item()
+                            mean_bert_f1 = F1.mean().item()
 
-                    metrics_text = "<br><br>".join(metrics)
+                            # Calculate ROUGE scores
+                            from rouge_score import rouge_scorer
+                            scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+                            
+                            # Calculate ROUGE scores and store in lists for plotting
+                            rouge_scores = {'rouge1': {'p': [], 'r': [], 'f': []},
+                                          'rouge2': {'p': [], 'r': [], 'f': []},
+                                          'rougeL': {'p': [], 'r': [], 'f': []}}
+                            
+                            for ref, pred in zip(y_true, y_pred):
+                                scores = scorer.score(ref, pred)
+                                for metric in ['rouge1', 'rouge2', 'rougeL']:
+                                    rouge_scores[metric]['p'].append(scores[metric].precision)
+                                    rouge_scores[metric]['r'].append(scores[metric].recall)
+                                    rouge_scores[metric]['f'].append(scores[metric].fmeasure)
+                            
+                            # Calculate averages
+                            avg_scores = {metric: {
+                                'p': sum(values['p'])/len(values['p']),
+                                'r': sum(values['r'])/len(values['r']),
+                                'f': sum(values['f'])/len(values['f'])
+                            } for metric, values in rouge_scores.items()}
+                            
+                            # Create visualization
+                            import matplotlib
+                            matplotlib.use('Agg')
+                            import matplotlib.pyplot as plt
+                            plt.close('all')
+                            plt.style.use('dark_background')
+                            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+                            
+                            # Plot 1: BERTScore distributions
+                            sns.kdeplot(data=P, label='Precision', ax=ax1, color='blue')
+                            sns.kdeplot(data=R, label='Recall', ax=ax1, color='green')
+                            sns.kdeplot(data=F1, label='F1', ax=ax1, color='red')
+                            ax1.axvline(mean_bert_p, color='blue', linestyle='--', alpha=0.5)
+                            ax1.axvline(mean_bert_r, color='green', linestyle='--', alpha=0.5)
+                            ax1.axvline(mean_bert_f1, color='red', linestyle='--', alpha=0.5)
+                            ax1.set_title('BERTScore Distribution', color='white', pad=20)
+                            ax1.set_xlabel('Score', color='white')
+                            ax1.set_ylabel('Density', color='white')
+                            ax1.tick_params(colors='white')
+                            ax1.legend()
+
+                            # Plot 2: ROUGE F1 distributions
+                            sns.kdeplot(data=rouge_scores['rouge1']['f'], label='ROUGE-1', ax=ax2, color='blue')
+                            sns.kdeplot(data=rouge_scores['rouge2']['f'], label='ROUGE-2', ax=ax2, color='green')
+                            sns.kdeplot(data=rouge_scores['rougeL']['f'], label='ROUGE-L', ax=ax2, color='red')
+                            ax2.set_title('ROUGE Score Distribution', color='white', pad=20)
+                            ax2.set_xlabel('F1 Score', color='white')
+                            ax2.set_ylabel('Density', color='white')
+                            ax2.tick_params(colors='white')
+                            ax2.legend()
+
+                            plt.tight_layout()
+                            
+                            # Create metrics text
+                            metrics = [
+                                f"[b][u]BERTScore Metrics[/u][/b]",
+                                f"Precision: {mean_bert_p:.3f}",
+                                f"Recall: {mean_bert_r:.3f}",
+                                f"F1: {mean_bert_f1:.3f}",
+                                f"",
+                                f"[b][u]ROUGE-1 Metrics[/u][/b]",
+                                f"Precision: {avg_scores['rouge1']['p']:.3f}",
+                                f"Recall: {avg_scores['rouge1']['r']:.3f}",
+                                f"F1: {avg_scores['rouge1']['f']:.3f}",
+                                f"",
+                                f"[b][u]ROUGE-2 Metrics[/u][/b]",
+                                f"Precision: {avg_scores['rouge2']['p']:.3f}",
+                                f"Recall: {avg_scores['rouge2']['r']:.3f}",
+                                f"F1: {avg_scores['rouge2']['f']:.3f}",
+                                f"",
+                                f"[b][u]ROUGE-L Metrics[/u][/b]",
+                                f"Precision: {avg_scores['rougeL']['p']:.3f}",
+                                f"Recall: {avg_scores['rougeL']['r']:.3f}",
+                                f"F1: {avg_scores['rougeL']['f']:.3f}",
+                                f"",
+                                f"[b][u]Samples Compared[/u][/b]: {len(y_true)}",
+                            ]
+                            
+                            metrics_text = "<br>".join(metrics)
+                            return metrics_text, fig
+                            
+                        except Exception as e:
+                            print(f"Error calculating text similarity metrics: {e}")
+                            return f"Error calculating text similarity metrics: {str(e)}", None
                     
-                    # Clear any existing plots
-                    plt.close('all')
-                    
-                    # Set style for dark background
-                    plt.style.use('dark_background')
-                    
-                    # Create figure and axis with dark background
-                    fig, ax = plt.subplots(figsize=(8, 6))
-                    # fig.patch.set_facecolor('#1a1a1a')
-                    # ax.set_facecolor('#1a1a1a')
-                    
-                    # Get unique labels
-                    labels = sorted(list(set(y_true) | set(y_pred)))
-                    
-                    # Create confusion matrix
-                    cm = confusion_matrix(y_true, y_pred, labels=labels)
-                    
-                    # Create heatmap with customized appearance
-                    sns.heatmap(
-                        cm, 
-                        annot=True, 
-                        fmt='d',
-                        #cmap="dark:salmon",#'magma',
-                        #cmap=sns.color_palette("dark:salmon", as_cmap=True), #looks fine, works with white
-                        cmap=sns.dark_palette("#69d", as_cmap=True), # #ff7c37 # #69d
-                        xticklabels=labels,
-                        yticklabels=labels,
-                        ax=ax,
-                        cbar_kws={'label': 'Count'},
-                        annot_kws={'color': 'white', 'fontsize': 10}
-                    )
-                    
-                    # Customize plot appearance
-                    plt.title(f'Confusion Matrix - {category}', color='white', pad=20)
-                    plt.ylabel('Human annotation', color='white')
-                    plt.xlabel('Model annotation', color='white')
-                    
-                    # Style the tick labels
-                    ax.tick_params(colors='white')
-                    
-                    # Adjust layout to prevent label cutoff
-                    plt.tight_layout()
-                    
-                    return metrics_text, fig
-                    
+                    else:
+                        # Original categorical metrics and confusion matrix code
+                        metrics = [
+                            f"[b][u]Accuracy[/u][/b]: {accuracy_score(y_true, y_pred):.3f}",
+                            f"[b][u]Macro F1[/u][/b]: {f1_score(y_true, y_pred, average='macro'):.3f}",
+                            f"[b][u]Weighted F1[/u][/b]: {f1_score(y_true, y_pred, average='weighted'):.3f}",
+                            f"[b][u]Samples Compared[/u][/b]: {len(y_true)}",
+                            f"[b][u]Agreement Rate[/u][/b]: {(y_true == y_pred).mean():.3f}"
+                        ]
+
+                        metrics_text = "<br><br>".join(metrics)
+                        
+                        # Use Agg backend for plotting
+                        import matplotlib
+                        matplotlib.use('Agg')
+                        import matplotlib.pyplot as plt
+                        
+                        plt.close('all')
+                        plt.style.use('dark_background')
+                        
+                        fig, ax = plt.subplots(figsize=(8, 6))
+                        labels = sorted(list(set(y_true) | set(y_pred)))
+                        cm = confusion_matrix(y_true, y_pred, labels=labels)
+                        
+                        sns.heatmap(
+                            cm, 
+                            annot=True, 
+                            fmt='d',
+                            cmap=sns.dark_palette("#69d", as_cmap=True),
+                            xticklabels=labels,
+                            yticklabels=labels,
+                            ax=ax,
+                            cbar_kws={'label': 'Count'},
+                            annot_kws={'color': 'white', 'fontsize': 10}
+                        )
+                        
+                        plt.title(f'Confusion Matrix - {category}', color='white', pad=20)
+                        plt.ylabel('Human annotation', color='white')
+                        plt.xlabel('Model annotation', color='white')
+                        ax.tick_params(colors='white')
+                        plt.tight_layout()
+                        
+                        return metrics_text, fig
+                        
                 except Exception as e:
                     print(f"Error in update_statistics: {str(e)}")
                     return f"Error calculating statistics: {str(e)}", None

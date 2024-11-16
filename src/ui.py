@@ -20,12 +20,6 @@ def create_ui():
     with gr.Blocks(theme=gr.themes.Default()) as demo:
     #with gr.Blocks(theme=gr.themes.Monochrome(spacing_size="sm", radius_size="none",primary_hue="blue",font=[gr.themes.GoogleFont("Inconsolata"), "Arial", "sans-serif"])) as demo:
         gr.Markdown("## 📝 Fannotate")
-        
-        # Define code_select and related variables at the start, before any tabs
-        # code_select = gr.Dropdown(label="Category", choices=[], visible=False, interactive=True)
-        # value_select = gr.Radio(label="Value", choices=[], visible=False, interactive=True)
-        # llm_code_select = gr.Dropdown(label="Select Category to Auto-fill", choices=[], visible=False, interactive=True)
-        # codes_display = gr.JSON(label="Current Codebook", visible=False) 
 
         with gr.Tabs():
             ###################################

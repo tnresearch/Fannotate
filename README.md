@@ -10,7 +10,7 @@ Fannotate is a tool for *faster* text annotation aided by LLMs. Central to Fanno
 - Progress tracking and agreement analysis
 - Support for both categorical and free-text annotations
 
-With Fannotate, we try to find the right balance between quality and quantity by letting the LLM auto-fill a suggested annotation in addition to a summary of the full text, reducing the need to read through every piece of text to annotate.
+With Fannotate, we aim to strike the right balance between quality and quantity by letting the LLM auto-fill a suggested annotation in addition to a summary of the full text, reducing the need to read through every piece of text to annotate.
 
 <img src="docs/images/concept.png" alt="Fannotate" width="400">
 

@@ -19,7 +19,7 @@ def create_ui():
     #demo = gr.Blocks(theme='SebastianBravo/simci_css')
     with demo:
         # Add header markdown above tabs
-        gr.Markdown("# 📝 Fannotate v0.1.1")
+        gr.Markdown("# 📝 Fannotate v0.1")
         
         annotator = TranscriptionAnnotator()
         

@@ -1,0 +1,10 @@
+gradio==5.5.0
+pandas>=2.0.0
+openpyxl>=3.1.2
+xlrd
+openai
+gradio_rich_textbox==0.4.3
+scikit-learn
+seaborn
+bert-score
+rouge-score

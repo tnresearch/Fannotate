@@ -10,7 +10,7 @@ def create_settings_tab(annotator):
         with gr.Row():
             with gr.Column():
                 framework_select = gr.Dropdown(
-                    choices=["vLLM", "OpenAI"],
+                    choices=["vLLM", "OpenAI", "PrivateGPT"],
                     value="vLLM",
                     label="LLM Framework",
                     interactive=True
@@ -67,6 +67,38 @@ def create_settings_tab(annotator):
                     label="Temperature",
                     interactive=True
                 )
+                max_transcript_length = gr.Number(
+                    value=500,
+                    label="Max Transcript Length (characters)",
+                    info="Maximum number of characters to include from each transcript",
+                    interactive=True,
+                    minimum=100,
+                    maximum=10000,
+                    step=100
+                )
+
+        # Add PrivateGPT specific settings
+        with gr.Row(visible=False) as privategpt_settings:
+            with gr.Column():
+                chat_id = gr.Textbox(
+                    value="",
+                    label="Chat ID (optional)",
+                    interactive=True
+                )
+            with gr.Column():
+                history_size = gr.Number(
+                    value=10,
+                    label="History Size",
+                    interactive=True,
+                    minimum=1,
+                    maximum=100
+                )
+            with gr.Column():
+                agent_id = gr.Textbox(
+                    value="",
+                    label="Agent ID",
+                    interactive=True
+                )
 
         with gr.Row():
             apply_llm_settings_btn = gr.Button("Apply LLM Settings", variant="primary")
@@ -109,7 +141,8 @@ def create_settings_tab(annotator):
         # Event handlers
         ############################################################
 
-        def apply_settings(framework, base_url, api_key, model, max_tokens_val, temp_val):
+        def apply_settings(framework, base_url, api_key, model, max_tokens_val, temp_val, 
+                         chat_id_val, history_size_val, agent_id_val, max_transcript_length_val):
             try:
                 from fannotate.lm import update_llm_config
                 update_llm_config(
@@ -118,11 +151,25 @@ def create_settings_tab(annotator):
                     api_key=api_key,
                     model=model,
                     max_tokens=int(max_tokens_val),
-                    temperature=float(temp_val)
+                    temperature=float(temp_val),
+                    chat_id=chat_id_val,
+                    history_size=int(history_size_val) if history_size_val else None,
+                    agent_id=agent_id_val,
+                    max_transcript_length=int(max_transcript_length_val)
                 )
                 return "Settings applied successfully"
             except Exception as e:
                 return f"Error applying settings: {str(e)}"
+
+        # Show/hide PrivateGPT settings based on framework selection
+        def update_framework_settings(framework):
+            return gr.Row(visible=(framework == "PrivateGPT"))
+
+        framework_select.change(
+            fn=update_framework_settings,
+            inputs=[framework_select],
+            outputs=[privategpt_settings]
+        )
 
         # Connect event handlers
         apply_llm_settings_btn.click(
@@ -133,7 +180,11 @@ def create_settings_tab(annotator):
                 api_key,
                 model_name,
                 max_tokens,
-                temperature
+                temperature,
+                chat_id,
+                history_size,
+                agent_id,
+                max_transcript_length
             ],
             outputs=[settings_status]
         )
@@ -145,5 +196,9 @@ def create_settings_tab(annotator):
             'model_name': model_name,
             'max_tokens': max_tokens,
             'temperature': temperature,
+            'chat_id': chat_id,
+            'history_size': history_size,
+            'agent_id': agent_id,
+            'max_transcript_length': max_transcript_length,
             'settings_status': settings_status
         } 

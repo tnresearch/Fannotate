@@ -1,3 +1,9 @@
+# IDE / Editor
+.idea
+.editorconfig
+.vscode
+
+# macOS
 .DS_Store
 __pycache__/
 uploads/
@@ -5,3 +11,4 @@ commands.txt
 bin/
 misc/
 docs/apis/
+config.env

@@ -1,55 +1,34 @@
 import gradio as gr
 from ..utils.display import clean_column_name
+from ...constants import MODEL_CHOICES, BASE_URLS
 
 def create_settings_tab(annotator):
     """Creates and returns the settings tab interface"""
     with gr.Tab("⚙️ Settings"):
         with gr.Row():
             gr.Markdown("## LLM Settings")
+
+        
+        def update_model_choices(framework_select):
+            return gr.update(choices=MODEL_CHOICES[framework_select], value=None)
             
         with gr.Row():
             with gr.Column():
                 framework_select = gr.Dropdown(
-                    choices=["vLLM", "OpenAI"],
+                    choices=["vLLM", "OpenAI", "TN-GenAI-V1"],
                     value="vLLM",
                     label="LLM Framework",
                     interactive=True
                 )
-                base_url = gr.Dropdown(
-                label="LLM Endpoint URL",
-                choices=[
-                    "https://api.openai.com/v1/",
-                    "http://192.168.50.155:8000/v1/",
-                    "http://172.16.16.48:8000/v1/"
-                ],
-                interactive=True,
-                allow_custom_value=True
-            )
-            with gr.Column():
+                
                 model_name = gr.Dropdown(
-                label="Model Name", 
-                choices=[
-                    'gpt-4',
-                    'gpt-4-turbo',
-                    'gpt-3.5-turbo',
-
-                    "google/gemma-2-2b-it",
-                    "google/gemma-2-9b-it",
-                    "google/gemma-2-27b-it",
-                    "meta-llama/Llama-3.1-8B-Instruct",
-                    "meta-llama/Llama-3.1-70B-Instruct",
-                    "meta-llama/Llama-3.1-405B-Instruct",
-
-                ],
-                interactive=True,
-                allow_custom_value=True
-            )
-                api_key = gr.Textbox(
-                    value="token-abc123",
-                    label="API Key",
-                    interactive=True,
-                    type="password"
+                    choices = MODEL_CHOICES["vLLM"],
+                    label = "Model choices",
+                    interactive = True
                 )
+
+                framework_select.change(fn=update_model_choices, inputs=[framework_select], outputs=[model_name])
+                
             with gr.Column():
                 max_tokens = gr.Number(
                     value=500,
@@ -59,14 +38,56 @@ def create_settings_tab(annotator):
                     maximum=2000,
                     step=1
                 )
-                temperature = gr.Slider(
-                    value=0.0,
-                    minimum=0.0,
-                    maximum=2.0,
-                    step=0.01,
-                    label="Temperature",
+                max_transcript_length = gr.Number(
+                    value=500,
+                    label="Max Transcript Length (characters)",
+                    info="Maximum number of characters to include from each transcript",
+                    interactive=True,
+                    minimum=100,
+                    maximum=10000,
+                    step=100
+                )
+
+        with gr.Row(visible=True) as default_settings:
+            temperature = gr.Slider(
+                value=0.0,
+                minimum=0.0,
+                maximum=2.0,
+                step=0.01,
+                label="Temperature",
+                interactive=True
+            )
+
+            api_key = gr.Textbox(
+                value="token-abc123",
+                label="API Key",
+                interactive=True,
+                type="password"
+            )
+
+        # Add PrivateGPT specific settings
+        with gr.Row(visible=False) as privategpt_settings:
+            with gr.Column():
+                chat_id = gr.Textbox(
+                    value="",
+                    label="Chat ID (optional)",
                     interactive=True
                 )
+            with gr.Column():
+                history_size = gr.Number(
+                    value=10,
+                    label="History Size",
+                    interactive=True,
+                    minimum=1,
+                    maximum=100
+                )
+            """with gr.Column():
+                agent_id = gr.Textbox(
+                    value="",
+                    label="Agent ID",
+                    interactive=True
+                )
+            """
 
         with gr.Row():
             apply_llm_settings_btn = gr.Button("Apply LLM Settings", variant="primary")
@@ -109,41 +130,68 @@ def create_settings_tab(annotator):
         # Event handlers
         ############################################################
 
-        def apply_settings(framework, base_url, api_key, model, max_tokens_val, temp_val):
+        def apply_settings(framework, model, max_tokens_val, temp_val, 
+                         chat_id_val, history_size_val, max_transcript_length_val):
             try:
                 from fannotate.lm import update_llm_config
                 update_llm_config(
                     framework=framework,
-                    base_url=base_url,
-                    api_key=api_key,
+                    base_url=BASE_URLS[framework],
+                    api_key=None,
                     model=model,
                     max_tokens=int(max_tokens_val),
-                    temperature=float(temp_val)
+                    temperature=float(temp_val),
+                    chat_id=chat_id_val,
+                    history_size=int(history_size_val) if history_size_val else None,
+                    max_transcript_length=int(max_transcript_length_val)
                 )
                 return "Settings applied successfully"
             except Exception as e:
                 return f"Error applying settings: {str(e)}"
+
+        # Show/hide PrivateGPT settings based on framework selection
+        def update_tn_genai_settings(framework):
+            return gr.Row(visible=(framework == "TN-GenAI-V1"))
+
+        def update_default_settings(framework):
+            return gr.Row(visible=(framework != "TN-GenAI-V1"))
+
+        framework_select.change(
+            fn=update_tn_genai_settings,
+            inputs=[framework_select],
+            outputs=[privategpt_settings]
+        )
+        framework_select.change(
+            fn=update_default_settings,
+            inputs=[framework_select],
+            outputs=[default_settings]
+        )
 
         # Connect event handlers
         apply_llm_settings_btn.click(
             fn=apply_settings,
             inputs=[
                 framework_select,
-                base_url,
-                api_key,
+                #api_key,
                 model_name,
                 max_tokens,
-                temperature
+                temperature,
+                chat_id,
+                history_size,
+                max_transcript_length
             ],
             outputs=[settings_status]
         )
 
         return {
             'framework_select': framework_select,
-            'base_url': base_url,
-            'api_key': api_key,
+            #'base_url': base_url,
+            #'api_key': api_key,
             'model_name': model_name,
             'max_tokens': max_tokens,
             'temperature': temperature,
+            'chat_id': chat_id,
+            'history_size': history_size,
+            'max_transcript_length': max_transcript_length,
             'settings_status': settings_status
         } 

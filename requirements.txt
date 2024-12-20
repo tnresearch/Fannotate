@@ -8,3 +8,4 @@ scikit-learn
 seaborn
 bert-score
 rouge-score
+requests>=2.31.0
